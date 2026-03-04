@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.navigation
+package com.example.viagourmet.Presentation.navigacion
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -12,7 +12,8 @@ import com.example.viagourmet.Presentacion.screens.login.LoginScreen
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaScreen
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaViewModel
 import com.example.viagourmet.Presentacion.screens.menu.MenuScreen
-import com.example.viagourmet.Presentacion.screens.menu.ProductoDetalleScreen
+import com.example.viagourmet.Presentation.screens.menu.ProductoDetalleScreen
+
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -24,7 +25,7 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph() {
+fun NavegacionGraph() {
     val navController = rememberNavController()
 
     // Compartir el mismo ViewModel de cuenta entre pantallas
@@ -72,7 +73,7 @@ fun NavGraph() {
                 onNavigateBack = { navController.popBackStack() },
                 onAgregarAlPedido = { producto, cantidad ->
                     cuentaViewModel.onEvent(
-                        com.example.viagourmet.presentation.screens.cuenta.CuentaEvent.AgregarProducto(
+                        com.example.viagourmet.Presentacion.screens.cuenta.CuentaEvent.AgregarProducto(
                             producto, cantidad
                         )
                     )

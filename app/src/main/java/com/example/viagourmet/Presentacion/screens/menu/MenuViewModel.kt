@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.screens.menu
+package com.example.viagourmet.Presentation.screens.menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
