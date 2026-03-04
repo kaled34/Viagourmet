@@ -1,4 +1,4 @@
-package com.example.viagourmet.Presentation.screens.menu
+package com.example.viagourmet.Presentacion.screens.menu
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +15,7 @@ import coil.compose.AsyncImage
 import com.example.viagourmet.Presentacion.theme.Brown80
 import com.example.viagourmet.data.mock.MockData
 import com.example.viagourmet.domain.model.Producto
-import com.example.viagourmet.presentation.components.CantidadSelector
+import com.example.viagourmet.Presentacion.components.CantidadSelector
 
 
 @OptIn(ExperimentalMaterial3Api::class)

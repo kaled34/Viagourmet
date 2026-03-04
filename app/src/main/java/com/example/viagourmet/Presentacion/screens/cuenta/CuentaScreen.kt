@@ -6,8 +6,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,7 +77,7 @@ fun CuentaScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Restaurant,
+                                imageVector = Icons.Default.Delete,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -95,7 +93,7 @@ fun CuentaScreen(
                             )
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Receipt,
+                                imageVector = Icons.Default.Delete,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )

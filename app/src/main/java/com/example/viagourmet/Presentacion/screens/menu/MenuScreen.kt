@@ -15,6 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.viagourmet.Presentacion.components.CategoriaChip
 import com.example.viagourmet.Presentacion.components.ProductoCard
 import com.example.viagourmet.Presentacion.theme.Brown80
+import com.example.viagourmet.Presentacion.screens.menu.MenuViewModel
 import com.example.viagourmet.domain.model.Categoria
 import com.example.viagourmet.domain.model.Producto
 
