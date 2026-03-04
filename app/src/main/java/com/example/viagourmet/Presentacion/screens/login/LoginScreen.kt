@@ -11,7 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.viagourmet.presentation.theme.Brown80
+import com.example.viagourmet.Presentacion.theme.Brown80
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

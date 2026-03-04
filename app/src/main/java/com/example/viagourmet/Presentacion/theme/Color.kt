@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.theme
+package com.example.viagourmet.Presentacion.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -10,7 +10,6 @@ val Cream = Color(0xFFFDF5E6)
 
 val GreenSuccess = Color(0xFF4CAF50)
 val RedError = Color(0xFFE53935)
-val YellowWarning = Color(0xFFFFC107)
 
 val TextPrimary = Color(0xFF2C2C2C)
 val TextSecondary = Color(0xFF757575)

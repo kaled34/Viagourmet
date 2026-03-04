@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.screens.cuenta
+package com.example.viagourmet.Presentacion.screens.cuenta
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,10 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.viagourmet.Presentacion.theme.Brown80
+import com.example.viagourmet.Presentacion.theme.GreenSuccess
 import com.example.viagourmet.domain.model.DetallePedido
-import com.example.viagourmet.presentation.theme.Brown80
-import com.example.viagourmet.presentation.theme.GreenSuccess
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,9 +25,8 @@ fun CuentaScreen(
     onNavigateBack: () -> Unit,
     onSeguirComprando: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Mostrar snackbar cuando hay mensajes
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeExito) {
@@ -58,15 +56,12 @@ fun CuentaScreen(
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 3.dp
-            ) {
+            Surface(tonalElevation = 3.dp) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    // Resumen de totales
                     ResumenCuenta(
                         subtotal = uiState.subtotal,
                         iva = uiState.iva,
@@ -75,18 +70,13 @@ fun CuentaScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Botones de acción
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Botón Solicitar Mesero
                         OutlinedButton(
                             onClick = { viewModel.onEvent(CuentaEvent.SolicitarMesero) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
+                            modifier = Modifier.weight(1f)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Restaurant,
@@ -97,7 +87,6 @@ fun CuentaScreen(
                             Text("Mesero")
                         }
 
-                        // Botón Pedir Cuenta
                         Button(
                             onClick = { viewModel.onEvent(CuentaEvent.PedirCuenta) },
                             modifier = Modifier.weight(1f),
@@ -117,7 +106,6 @@ fun CuentaScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Botón Seguir Comprando
                     TextButton(
                         onClick = onSeguirComprando,
                         modifier = Modifier.fillMaxWidth()
@@ -129,16 +117,13 @@ fun CuentaScreen(
         }
     ) { paddingValues ->
         if (uiState.items.isEmpty()) {
-            // Carrito vacío
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "Tu cuenta está vacía",
                         style = MaterialTheme.typography.headlineSmall
@@ -156,7 +141,6 @@ fun CuentaScreen(
                 }
             }
         } else {
-            // Lista de items
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -164,7 +148,10 @@ fun CuentaScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.items) { detalle ->
+                items(
+                    items = uiState.items,
+                    key = { detalle: DetallePedido -> detalle.id }
+                ) { detalle: DetallePedido ->
                     ItemCuentaCard(
                         detalle = detalle,
                         onEliminar = {
@@ -183,9 +170,7 @@ fun ItemCuentaCard(
     onEliminar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth()
-    ) {
+    Card(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,10 +178,7 @@ fun ItemCuentaCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Información del producto
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = detalle.producto?.nombre ?: "Producto",
                     style = MaterialTheme.typography.titleMedium
@@ -208,7 +190,6 @@ fun ItemCuentaCard(
                 )
             }
 
-            // Subtotal y botón eliminar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -218,7 +199,6 @@ fun ItemCuentaCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = Brown80
                 )
-
                 IconButton(onClick = onEliminar) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -249,45 +229,31 @@ fun ResumenCuenta(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Subtotal
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Subtotal", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "$${"%.2f".format(subtotal)}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text("$${"%.2f".format(subtotal)}", style = MaterialTheme.typography.bodyLarge)
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // IVA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("IVA (16%)", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "$${"%.2f".format(iva)}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text("$${"%.2f".format(iva)}", style = MaterialTheme.typography.bodyLarge)
             }
 
-            Divider(
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    "TOTAL",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Text("TOTAL", style = MaterialTheme.typography.titleLarge)
                 Text(
                     "$${"%.2f".format(total)}",
                     style = MaterialTheme.typography.titleLarge,

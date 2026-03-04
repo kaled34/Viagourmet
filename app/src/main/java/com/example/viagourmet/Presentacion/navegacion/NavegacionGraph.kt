@@ -9,10 +9,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.viagourmet.Presentacion.screens.login.LoginScreen
-import com.example.viagourmet.presentation.screens.cuenta.CuentaScreen
-import com.example.viagourmet.presentation.screens.cuenta.CuentaViewModel
-import com.example.viagourmet.presentation.screens.menu.MenuScreen
-import com.example.viagourmet.presentation.screens.menu.ProductoDetalleScreen
+import com.example.viagourmet.Presentacion.screens.cuenta.CuentaScreen
+import com.example.viagourmet.Presentacion.screens.cuenta.CuentaViewModel
+import com.example.viagourmet.Presentacion.screens.menu.MenuScreen
+import com.example.viagourmet.Presentacion.screens.menu.ProductoDetalleScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")

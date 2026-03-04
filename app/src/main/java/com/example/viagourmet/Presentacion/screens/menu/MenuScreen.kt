@@ -12,10 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.viagourmet.presentation.components.CategoriaChip
-import com.example.viagourmet.presentation.components.ProductoCard
-import com.example.viagourmet.presentation.theme.Brown80
+import com.example.viagourmet.Presentacion.components.CategoriaChip
+import com.example.viagourmet.Presentacion.components.ProductoCard
+import com.example.viagourmet.Presentacion.theme.Brown80
+import com.example.viagourmet.domain.model.Categoria
+import com.example.viagourmet.domain.model.Producto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +25,8 @@ fun MenuScreen(
     onNavigateToDetalle: (Int) -> Unit,
     onNavigateToCuenta: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // SIN collectAsStateWithLifecycle — usamos collectAsState que no necesita dependencia extra
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -39,17 +41,7 @@ fun MenuScreen(
                     containerColor = Brown80
                 ),
                 actions = {
-                    // Botón para ir al carrito
                     IconButton(onClick = onNavigateToCuenta) {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        ) {
-                            Text(
-                                text = "1", // TODO: Conectar con contador real
-                                color = MaterialTheme.colorScheme.onSecondary
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
                             contentDescription = "Ver cuenta",
@@ -92,15 +84,15 @@ fun MenuScreen(
                 }
 
                 else -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // Fila de categorías
+                    Column(modifier = Modifier.fillMaxSize()) {
                         LazyRow(
                             modifier = Modifier.padding(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(uiState.categorias) { categoria ->
+                            items(
+                                items = uiState.categorias,
+                                key = { categoria: Categoria -> categoria.id }
+                            ) { categoria: Categoria ->
                                 CategoriaChip(
                                     categoria = categoria,
                                     isSelected = uiState.categoriaSeleccionada?.id == categoria.id,
@@ -111,13 +103,15 @@ fun MenuScreen(
                             }
                         }
 
-                        // Lista de productos
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(uiState.productos) { producto ->
+                            items(
+                                items = uiState.productos,
+                                key = { producto: Producto -> producto.id }
+                            ) { producto: Producto ->
                                 ProductoCard(
                                     producto = producto,
                                     onClick = { onNavigateToDetalle(producto.id) }

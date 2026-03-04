@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.components
+package com.example.viagourmet.Presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,9 +11,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.viagourmet.Presentacion.theme.Brown40
+import com.example.viagourmet.Presentacion.theme.RedError
 import com.example.viagourmet.domain.model.Producto
-import com.example.viagourmet.presentation.theme.Brown40
-import com.example.viagourmet.presentation.theme.RedError
+
 
 @Composable
 fun ProductoCard(

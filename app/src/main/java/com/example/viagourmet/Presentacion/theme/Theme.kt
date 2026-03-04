@@ -1,4 +1,4 @@
-package com.example.viagourmet.presentation.theme
+package com.example.viagourmet.Presentation.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
@@ -8,6 +8,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.viagourmet.Presentacion.theme.Brown40
+import com.example.viagourmet.Presentacion.theme.Brown60
+import com.example.viagourmet.Presentacion.theme.Brown80
+import com.example.viagourmet.Presentacion.theme.Cream
+import com.example.viagourmet.Presentacion.theme.RedError
+import com.example.viagourmet.Presentacion.theme.TextPrimary
 
 private val LightColorScheme = lightColorScheme(
     primary = Brown80,
