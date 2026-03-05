@@ -1,320 +1,142 @@
 package com.example.viagourmet.Presentacion.screens.cuenta
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.viagourmet.Presentacion.theme.Brown80
-import com.example.viagourmet.Presentacion.theme.GreenSuccess
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.viagourmet.domain.model.DetallePedido
+import com.example.viagourmet.domain.model.Producto
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.util.UUID
+import javax.inject.Inject
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CuentaScreen(
-    viewModel: CuentaViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit,
-    onSeguirComprando: () -> Unit,
-    onVerEstadoPedido: () -> Unit
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+enum class OpcionHorario(val label: String, val minutos: Int) {
+    AHORA("Ahora", 0),
+    MINUTOS_25("25 minutos", 25),
+    MINUTOS_30("30 minutos", 30),
+    MINUTOS_45("45 minutos", 45),
+    UNA_HORA("1 hora", 60)
+}
+data class CuentaUiState(
+    val items: List<DetallePedido> = emptyList(),
+    val subtotal: BigDecimal = BigDecimal.ZERO,
+    val iva: BigDecimal = BigDecimal.ZERO,
+    val total: BigDecimal = BigDecimal.ZERO,
+    val horaSeleccionada: OpcionHorario? = null,
+    val isLoading: Boolean = false,
+    val mensajeExito: String? = null,
+    val errorMessage: String? = null
+)
 
-    LaunchedEffect(uiState.mensajeExito) {
-        uiState.mensajeExito?.let { mensaje ->
-            snackbarHostState.showSnackbar(mensaje)
+sealed class CuentaEvent {
+    data class AgregarProducto(val producto: Producto, val cantidad: Int) : CuentaEvent()
+    data class EliminarItem(val itemId: Int) : CuentaEvent()
+    data class ActualizarCantidad(val itemId: Int, val nuevaCantidad: Int) : CuentaEvent()
+    data class SeleccionarHorario(val opcion: OpcionHorario) : CuentaEvent()
+    object SolicitarMesero : CuentaEvent()
+    object PedirCuenta : CuentaEvent()
+    object LimpiarCuenta : CuentaEvent()
+}
+
+@HiltViewModel
+class CuentaViewModel @Inject constructor() : ViewModel() {
+
+    private val _uiState = MutableStateFlow(CuentaUiState())
+    val uiState: StateFlow<CuentaUiState> = _uiState.asStateFlow()
+
+    private val IVA_RATE = BigDecimal("0.16")
+
+    fun onEvent(event: CuentaEvent) {
+        when (event) {
+            is CuentaEvent.AgregarProducto -> agregarProducto(event.producto, event.cantidad)
+            is CuentaEvent.EliminarItem -> eliminarItem(event.itemId)
+            is CuentaEvent.ActualizarCantidad -> actualizarCantidad(event.itemId, event.nuevaCantidad)
+            is CuentaEvent.SeleccionarHorario -> _uiState.value = _uiState.value.copy(horaSeleccionada = event.opcion)
+            is CuentaEvent.SolicitarMesero -> solicitarMesero()
+            is CuentaEvent.PedirCuenta -> pedirCuenta()
+            is CuentaEvent.LimpiarCuenta -> limpiarCuenta()
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Mi Cuenta") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Regresar"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Brown80,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+    private fun agregarProducto(producto: Producto, cantidad: Int) {
+        viewModelScope.launch {
+            val itemExistente = _uiState.value.items.find { it.productoId == producto.id }
+            if (itemExistente != null) {
+                actualizarCantidad(itemExistente.id, itemExistente.cantidad + cantidad)
+            } else {
+                val nuevoDetalle = DetallePedido(
+                    id = UUID.randomUUID().hashCode(),
+                    pedidoId = 0,
+                    productoId = producto.id,
+                    cantidad = cantidad,
+                    precioUnitario = producto.precio,
+                    notas = null,
+                    producto = producto
                 )
+                _uiState.value = _uiState.value.copy(
+                    items = _uiState.value.items + nuevoDetalle,
+                    mensajeExito = "${producto.nombre} agregado al pedido"
+                )
+                calcularTotales()
+            }
+        }
+    }
+
+    private fun eliminarItem(itemId: Int) {
+        viewModelScope.launch {
+            val itemEliminado = _uiState.value.items.find { it.id == itemId }
+            _uiState.value = _uiState.value.copy(
+                items = _uiState.value.items.filter { it.id != itemId },
+                mensajeExito = itemEliminado?.producto?.let { "${it.nombre} eliminado del pedido" }
             )
-        },
-        bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    SelectorHorario(
-                        horaSeleccionada = uiState.horaSeleccionada,
-                        onHoraSeleccionada = { opcion ->
-                            viewModel.onEvent(CuentaEvent.SeleccionarHorario(opcion))
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    ResumenCuenta(
-                        subtotal = uiState.subtotal,
-                        iva = uiState.iva,
-                        total = uiState.total
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { viewModel.onEvent(CuentaEvent.SolicitarMesero) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Restaurant,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Mesero")
-                        }
-
-                        Button(
-                            onClick = { viewModel.onEvent(CuentaEvent.PedirCuenta) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = GreenSuccess),
-                            enabled = uiState.horaSeleccionada != null
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Receipt,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Cuenta")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (uiState.horaSeleccionada == null && uiState.items.isNotEmpty()) {
-                        Text(
-                            text = "⚠ Selecciona una hora de recogida para continuar",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    Button(
-                        onClick = { onVerEstadoPedido() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brown80),
-                        enabled = uiState.horaSeleccionada != null && uiState.items.isNotEmpty()
-                    ) {
-                        Text("Ver estado de mi pedido")
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TextButton(
-                        onClick = onSeguirComprando,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Seguir agregando productos")
-                    }
-                }
-            }
-        }
-    ) { paddingValues ->
-        if (uiState.items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Tu cuenta está vacía",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Agrega productos del menú",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onSeguirComprando) {
-                        Text("Ver menú")
-                    }
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = uiState.items,
-                    key = { detalle: DetallePedido -> detalle.id }
-                ) { detalle: DetallePedido ->
-                    ItemCuentaCard(
-                        detalle = detalle,
-                        onEliminar = {
-                            viewModel.onEvent(CuentaEvent.EliminarItem(detalle.id))
-                        }
-                    )
-                }
-            }
+            calcularTotales()
         }
     }
-}
 
-@Composable
-fun SelectorHorario(
-    horaSeleccionada: OpcionHorario?,
-    onHoraSeleccionada: (OpcionHorario) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = "¿Cuándo quieres recoger tu pedido?",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
+    private fun actualizarCantidad(itemId: Int, nuevaCantidad: Int) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                items = _uiState.value.items.map { detalle ->
+                    if (detalle.id == itemId) detalle.copy(cantidad = nuevaCantidad) else detalle
+                }
+            )
+            calcularTotales()
+        }
+    }
+
+    private fun calcularTotales() {
+        val subtotal = _uiState.value.items.sumOf { it.subtotal }
+        val iva = subtotal.multiply(IVA_RATE)
+        _uiState.value = _uiState.value.copy(
+            subtotal = subtotal,
+            iva = iva,
+            total = subtotal + iva
         )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(OpcionHorario.entries) { opcion ->
-                FilterChip(
-                    selected = horaSeleccionada == opcion,
-                    onClick = { onHoraSeleccionada(opcion) },
-                    label = { Text(opcion.label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Brown80,
-                        selectedLabelColor = Color.White
-                    )
-                )
-            }
+    }
+
+    private fun solicitarMesero() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                mensajeExito = "🚀 Mesero solicitado, en breve te atenderán"
+            )
         }
     }
-}
 
-@Composable
-fun ItemCuentaCard(
-    detalle: DetallePedido,
-    onEliminar: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = detalle.producto?.nombre ?: "Producto",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "${detalle.cantidad} x $${"%.2f".format(detalle.precioUnitario)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "$${"%.2f".format(detalle.subtotal)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Brown80
-                )
-                IconButton(onClick = onEliminar) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Eliminar",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+    private fun pedirCuenta() {
+        viewModelScope.launch {
+            val hora = _uiState.value.horaSeleccionada
+            _uiState.value = _uiState.value.copy(
+                mensajeExito = "🧾 Pedido confirmado para ${hora?.label ?: "ahora"}"
+            )
         }
     }
-}
 
-@Composable
-fun ResumenCuenta(
-    subtotal: java.math.BigDecimal,
-    iva: java.math.BigDecimal,
-    total: java.math.BigDecimal,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Subtotal", style = MaterialTheme.typography.bodyLarge)
-                Text("$${"%.2f".format(subtotal)}", style = MaterialTheme.typography.bodyLarge)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("IVA (16%)", style = MaterialTheme.typography.bodyLarge)
-                Text("$${"%.2f".format(iva)}", style = MaterialTheme.typography.bodyLarge)
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("TOTAL", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "$${"%.2f".format(total)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Brown80
-                )
-            }
+    private fun limpiarCuenta() {
+        viewModelScope.launch {
+            _uiState.value = CuentaUiState()
         }
     }
 }
