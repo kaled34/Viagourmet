@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.example.viagourmet.Presentacion.navegacion.NavegacionGraph
 import com.example.viagourmet.Presentacion.theme.ViaGourmetTheme
-import com.example.viagourmet.Presentacion.navigacion.NavegacionGraph
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

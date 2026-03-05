@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Estado de la pantalla de menú
 data class MenuUiState(
     val isLoading: Boolean = false,
     val categorias: List<Categoria> = emptyList(),
@@ -21,7 +20,6 @@ data class MenuUiState(
     val errorMessage: String? = null
 )
 
-// Eventos que puede recibir el ViewModel
 sealed class MenuEvent {
     data class SeleccionarCategoria(val categoria: Categoria) : MenuEvent()
     object CargarMenu : MenuEvent()
@@ -47,12 +45,9 @@ class MenuViewModel @Inject constructor() : ViewModel() {
     private fun cargarMenu() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
             try {
-                // Simulamos carga de datos (como si vinieran de API)
                 val categorias = MockData.getCategoriasActivas()
                 val primeraCategoria = categorias.firstOrNull()
-
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     categorias = categorias,

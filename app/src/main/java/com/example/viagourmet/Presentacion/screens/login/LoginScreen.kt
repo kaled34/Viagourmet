@@ -13,11 +13,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.viagourmet.Presentacion.theme.Brown80
 import androidx.compose.ui.text.input.VisualTransformation
+import com.example.viagourmet.Presentacion.session.RolUsuario
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (RolUsuario) -> Unit,
     onNavigateToRegistro: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
@@ -86,7 +87,7 @@ fun LoginScreen(
 
         // Botón de login
         Button(
-            onClick = onLoginSuccess, // Simulamos login exitoso
+            onClick = { onLoginSuccess(RolUsuario.CLIENTE) }, // ← pasar el rol
             modifier = Modifier.fillMaxWidth(),
             enabled = email.isNotBlank() && password.isNotBlank()
         ) {

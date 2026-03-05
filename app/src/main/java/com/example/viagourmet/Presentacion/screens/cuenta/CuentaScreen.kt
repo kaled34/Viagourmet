@@ -2,14 +2,18 @@ package com.example.viagourmet.Presentacion.screens.cuenta
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.viagourmet.Presentacion.theme.Brown80
@@ -21,10 +25,10 @@ import com.example.viagourmet.domain.model.DetallePedido
 fun CuentaScreen(
     viewModel: CuentaViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onSeguirComprando: () -> Unit
+    onSeguirComprando: () -> Unit,
+    onVerEstadoPedido: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeExito) {
@@ -60,6 +64,15 @@ fun CuentaScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    SelectorHorario(
+                        horaSeleccionada = uiState.horaSeleccionada,
+                        onHoraSeleccionada = { opcion ->
+                            viewModel.onEvent(CuentaEvent.SeleccionarHorario(opcion))
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     ResumenCuenta(
                         subtotal = uiState.subtotal,
                         iva = uiState.iva,
@@ -77,7 +90,7 @@ fun CuentaScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = Icons.Default.Restaurant,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -88,18 +101,37 @@ fun CuentaScreen(
                         Button(
                             onClick = { viewModel.onEvent(CuentaEvent.PedirCuenta) },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = GreenSuccess
-                            )
+                            colors = ButtonDefaults.buttonColors(containerColor = GreenSuccess),
+                            enabled = uiState.horaSeleccionada != null
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = Icons.Default.Receipt,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Cuenta")
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (uiState.horaSeleccionada == null && uiState.items.isNotEmpty()) {
+                        Text(
+                            text = "⚠ Selecciona una hora de recogida para continuar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Button(
+                        onClick = { onVerEstadoPedido() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Brown80),
+                        enabled = uiState.horaSeleccionada != null && uiState.items.isNotEmpty()
+                    ) {
+                        Text("Ver estado de mi pedido")
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -163,6 +195,36 @@ fun CuentaScreen(
 }
 
 @Composable
+fun SelectorHorario(
+    horaSeleccionada: OpcionHorario?,
+    onHoraSeleccionada: (OpcionHorario) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "¿Cuándo quieres recoger tu pedido?",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(OpcionHorario.entries) { opcion ->
+                FilterChip(
+                    selected = horaSeleccionada == opcion,
+                    onClick = { onHoraSeleccionada(opcion) },
+                    label = { Text(opcion.label) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Brown80,
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun ItemCuentaCard(
     detalle: DetallePedido,
     onEliminar: () -> Unit,
@@ -187,7 +249,6 @@ fun ItemCuentaCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -234,9 +295,7 @@ fun ResumenCuenta(
                 Text("Subtotal", style = MaterialTheme.typography.bodyLarge)
                 Text("$${"%.2f".format(subtotal)}", style = MaterialTheme.typography.bodyLarge)
             }
-
             Spacer(modifier = Modifier.height(4.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -244,9 +303,7 @@ fun ResumenCuenta(
                 Text("IVA (16%)", style = MaterialTheme.typography.bodyLarge)
                 Text("$${"%.2f".format(iva)}", style = MaterialTheme.typography.bodyLarge)
             }
-
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
