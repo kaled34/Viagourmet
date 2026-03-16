@@ -13,7 +13,34 @@ import java.math.BigDecimal
 import java.util.UUID
 import javax.inject.Inject
 
+enum class OpcionHorario(val label: String, val minutos: Int) {
+    AHORA("Ahora", 0),
+    MINUTOS_25("25 minutos", 25),
+    MINUTOS_30("30 minutos", 30),
+    MINUTOS_45("45 minutos", 45),
+    UNA_HORA("1 hora", 60)
+}
 
+data class CuentaUiState(
+    val items: List<DetallePedido> = emptyList(),
+    val subtotal: BigDecimal = BigDecimal.ZERO,
+    val iva: BigDecimal = BigDecimal.ZERO,
+    val total: BigDecimal = BigDecimal.ZERO,
+    val horaSeleccionada: OpcionHorario? = null,
+    val isLoading: Boolean = false,
+    val mensajeExito: String? = null,
+    val errorMessage: String? = null
+)
+
+sealed class CuentaEvent {
+    data class AgregarProducto(val producto: Producto, val cantidad: Int) : CuentaEvent()
+    data class EliminarItem(val itemId: Int) : CuentaEvent()
+    data class ActualizarCantidad(val itemId: Int, val nuevaCantidad: Int) : CuentaEvent()
+    data class SeleccionarHorario(val opcion: OpcionHorario) : CuentaEvent()
+    object SolicitarMesero : CuentaEvent()
+    object PedirCuenta : CuentaEvent()
+    object LimpiarCuenta : CuentaEvent()
+}
 
 @HiltViewModel
 class CuentaViewModel @Inject constructor() : ViewModel() {
