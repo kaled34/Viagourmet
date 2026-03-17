@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.viagourmet.Presentacion.screens.admin.AdminPedidosScreen
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaEvent
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaScreen
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaViewModel
@@ -24,6 +25,7 @@ sealed class Screen(val route: String) {
     object Menu : Screen("menu")
     object Cuenta : Screen("cuenta")
     object MiPedido : Screen("mi_pedido")
+    object Admin : Screen("admin")                          // ← NUEVA RUTA
     object ProductoDetalle : Screen("producto/{productoId}") {
         fun createRoute(productoId: Int) = "producto/$productoId"
     }
@@ -41,12 +43,13 @@ fun NavegacionGraph() {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = { rol ->
-                    if (rol == RolUsuario.CLIENTE) {
-                        navController.navigate(Screen.Menu.route) {
+                    when (rol) {
+                        RolUsuario.CLIENTE -> navController.navigate(Screen.Menu.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
-                    } else {
-                        // TODO: navegar a pantalla de empleado
+                        RolUsuario.EMPLEADO -> navController.navigate(Screen.Admin.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
                     }
                 },
                 onNavigateToRegistro = {
@@ -58,12 +61,13 @@ fun NavegacionGraph() {
         composable(Screen.Registro.route) {
             RegistroScreen(
                 onRegistroExitoso = { rol ->
-                    if (rol == RolUsuario.CLIENTE) {
-                        navController.navigate(Screen.Menu.route) {
+                    when (rol) {
+                        RolUsuario.CLIENTE -> navController.navigate(Screen.Menu.route) {
                             popUpTo(Screen.Registro.route) { inclusive = true }
                         }
-                    } else {
-
+                        RolUsuario.EMPLEADO -> navController.navigate(Screen.Admin.route) {
+                            popUpTo(Screen.Registro.route) { inclusive = true }
+                        }
                     }
                 },
                 onNavigateToLogin = { navController.popBackStack() }
@@ -109,6 +113,17 @@ fun NavegacionGraph() {
         composable(Screen.MiPedido.route) {
             MiPedidoScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── PANEL ADMINISTRADOR ──────────────────────────────────────────────
+        composable(Screen.Admin.route) {
+            AdminPedidosScreen(
+                onCerrarSesion = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Admin.route) { inclusive = true }
+                    }
+                }
             )
         }
     }
