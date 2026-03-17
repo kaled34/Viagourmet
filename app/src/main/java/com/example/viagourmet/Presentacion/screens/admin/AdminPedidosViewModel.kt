@@ -1,21 +1,20 @@
 package com.example.viagourmet.Presentacion.screens.admin
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.viagourmet.data.mock.AdminMockData
+import com.example.viagourmet.data.repository.PedidoRepositoryLocal
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.ModuloPedido
 import com.example.viagourmet.domain.model.Pedido
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Filtro de pestañas para el admin
 enum class FiltroAdmin(val label: String) {
     TODOS("Todos"),
     PENDIENTE("Pendientes"),
@@ -47,14 +46,9 @@ data class AdminPedidosUiState(
             }
         }
 
-    val contadorPendientes: Int
-        get() = pedidos.count { it.estado == EstadoPedido.PENDIENTE }
-
-    val contadorEnPreparacion: Int
-        get() = pedidos.count { it.estado == EstadoPedido.EN_PREPARACION }
-
-    val contadorListos: Int
-        get() = pedidos.count { it.estado == EstadoPedido.LISTO }
+    val contadorPendientes: Int get() = pedidos.count { it.estado == EstadoPedido.PENDIENTE }
+    val contadorEnPreparacion: Int get() = pedidos.count { it.estado == EstadoPedido.EN_PREPARACION }
+    val contadorListos: Int get() = pedidos.count { it.estado == EstadoPedido.LISTO }
 }
 
 sealed class AdminEvent {
@@ -67,18 +61,20 @@ sealed class AdminEvent {
 }
 
 @HiltViewModel
-class AdminPedidosViewModel @Inject constructor() : ViewModel() {
+class AdminPedidosViewModel @Inject constructor(
+    private val repository: PedidoRepositoryLocal
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminPedidosUiState(isLoading = true))
     val uiState: StateFlow<AdminPedidosUiState> = _uiState.asStateFlow()
 
     init {
-        cargarPedidos()
+        observarPedidos()
     }
 
     fun onEvent(event: AdminEvent) {
         when (event) {
-            is AdminEvent.Cargar -> cargarPedidos()
+            is AdminEvent.Cargar -> Unit
             is AdminEvent.SeleccionarFiltro -> _uiState.value =
                 _uiState.value.copy(filtroSeleccionado = event.filtro)
             is AdminEvent.VerDetalle -> _uiState.value =
@@ -91,39 +87,31 @@ class AdminPedidosViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    private fun cargarPedidos() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(600) // Simula latencia de red
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                pedidos = AdminMockData.pedidos.toList()
-            )
-        }
+    private fun observarPedidos() {
+        repository.getPedidosFlow()
+            .onEach { pedidos ->
+                val idSeleccionado = _uiState.value.pedidoSeleccionado?.id
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    pedidos = pedidos.sortedByDescending { it.id },
+                    pedidoSeleccionado = if (idSeleccionado != null)
+                        pedidos.find { it.id == idSeleccionado }
+                    else
+                        _uiState.value.pedidoSeleccionado
+                )
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun cambiarEstado(pedidoId: Int, nuevoEstado: EstadoPedido) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isActualizando = true)
-            delay(400) // Simula llamada al API
-
-            val exito = AdminMockData.actualizarEstado(pedidoId, nuevoEstado)
-
-            if (exito) {
-                val pedidosActualizados = AdminMockData.pedidos.toList()
-                val pedidoActualizado = pedidosActualizados.find { it.id == pedidoId }
-                _uiState.value = _uiState.value.copy(
-                    isActualizando = false,
-                    pedidos = pedidosActualizados,
-                    pedidoSeleccionado = pedidoActualizado,
-                    mensajeExito = "Estado actualizado a: ${nuevoEstado.displayName()}"
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    isActualizando = false,
-                    errorMessage = "No se pudo actualizar el estado"
-                )
-            }
+            val exito = repository.actualizarEstado(pedidoId, nuevoEstado)
+            _uiState.value = _uiState.value.copy(
+                isActualizando = false,
+                mensajeExito = if (exito) "Actualizado a: ${nuevoEstado.displayName()}" else null,
+                errorMessage = if (!exito) "No se pudo actualizar" else null
+            )
         }
     }
 }

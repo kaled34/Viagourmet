@@ -1,23 +1,22 @@
 package com.example.viagourmet.Presentacion.screens.cuenta
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.viagourmet.Presentacion.components.CantidadSelector
 import com.example.viagourmet.Presentacion.theme.Brown80
-import com.example.viagourmet.Presentacion.theme.GreenSuccess
-import com.example.viagourmet.domain.model.DetallePedido
+import com.example.viagourmet.data.repository.ItemCarrito
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,22 +24,29 @@ fun CuentaScreen(
     viewModel: CuentaViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onSeguirComprando: () -> Unit,
-    onVerEstadoPedido: () -> Unit
+    onVerEstadoPedido: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.mensajeExito) {
-        uiState.mensajeExito?.let { mensaje ->
-            snackbarHostState.showSnackbar(mensaje)
+    LaunchedEffect(uiState.pedidoConfirmado) {
+        uiState.pedidoConfirmado?.let { pedido ->
+            onVerEstadoPedido(pedido.id)
+            viewModel.onEvent(CuentaEvent.LimpiarCuenta)
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(CuentaEvent.LimpiarMensaje)
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Mi Cuenta") },
+                title = { Text("Mi pedido") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
@@ -53,86 +59,86 @@ fun CuentaScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp)
-                ) {
-                    SelectorHorario(
-                        horaSeleccionada = uiState.horaSeleccionada,
-                        onHoraSeleccionada = { opcion ->
-                            viewModel.onEvent(CuentaEvent.SeleccionarHorario(opcion))
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ResumenCuenta(
-                        subtotal = uiState.subtotal,
-                        iva = uiState.iva,
-                        total = uiState.total
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            if (uiState.items.isNotEmpty()) {
+                Surface(tonalElevation = 4.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { viewModel.onEvent(CuentaEvent.SolicitarMesero) },
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(Icons.Default.FavoriteBorder, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Mesero")
+                            Text("Subtotal", style = MaterialTheme.typography.bodyMedium)
+                            Text("$${"%.2f".format(uiState.subtotal)}", style = MaterialTheme.typography.bodyMedium)
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("IVA (16%)", style = MaterialTheme.typography.bodyMedium)
+                            Text("$${"%.2f".format(uiState.iva)}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        HorizontalDivider()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Total", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                "$${"%.2f".format(uiState.total)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Brown80
+                            )
+                        }
+
                         Button(
-                            onClick = { viewModel.onEvent(CuentaEvent.PedirCuenta) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = GreenSuccess),
-                            enabled = uiState.horaSeleccionada != null
+                            onClick = { viewModel.onEvent(CuentaEvent.ConfirmarPedido) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !uiState.isLoading && uiState.horaSeleccionada != null,
+                            colors = ButtonDefaults.buttonColors(containerColor = Brown80)
                         ) {
-                            Icon(Icons.Default.FavoriteBorder, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Cuenta")
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = if (uiState.horaSeleccionada == null)
+                                        "Selecciona una hora de recogida"
+                                    else "Confirmar pedido"
+                                )
+                            }
                         }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (uiState.horaSeleccionada == null && uiState.items.isNotEmpty()) {
-                        Text(
-                            text = "⚠ Selecciona una hora de recogida para continuar",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    Button(
-                        onClick = { onVerEstadoPedido() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Brown80),
-                        enabled = uiState.horaSeleccionada != null && uiState.items.isNotEmpty()
-                    ) {
-                        Text("Ver estado de mi pedido")
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(onClick = onSeguirComprando, modifier = Modifier.fillMaxWidth()) {
-                        Text("Seguir agregando productos")
                     }
                 }
             }
         }
     ) { paddingValues ->
+
         if (uiState.items.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Tu cuenta está vacía", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("🛒", style = MaterialTheme.typography.displayMedium)
+                    Text("Tu pedido está vacío", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        "Agrega productos del menú",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        "Agrega productos desde el menú",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = onSeguirComprando) { Text("Ver menú") }
                 }
             }
@@ -140,106 +146,151 @@ fun CuentaScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(items = uiState.items, key = { detalle: DetallePedido -> detalle.id }) { detalle ->
-                    ItemCuentaCard(
-                        detalle = detalle,
-                        onEliminar = { viewModel.onEvent(CuentaEvent.EliminarItem(detalle.id)) }
+
+                // Selector de horario
+                item {
+                    Text(
+                        "¿Cuándo quieres recoger?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-            }
-        }
-    }
-}
 
-@Composable
-fun SelectorHorario(
-    horaSeleccionada: OpcionHorario?,
-    onHoraSeleccionada: (OpcionHorario) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = "¿Cuándo quieres recoger tu pedido?",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(OpcionHorario.entries) { opcion ->
-                FilterChip(
-                    selected = horaSeleccionada == opcion,
-                    onClick = { onHoraSeleccionada(opcion) },
-                    label = { Text(opcion.label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Brown80,
-                        selectedLabelColor = Color.White
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OpcionHorario.entries.forEach { opcion ->
+                            HorarioOpcionItem(
+                                opcion = opcion,
+                                isSelected = uiState.horaSeleccionada == opcion,
+                                onClick = { viewModel.onEvent(CuentaEvent.SeleccionarHorario(opcion)) }
+                            )
+                        }
+                    }
+                }
+
+                item { HorizontalDivider() }
+
+                item {
+                    Text(
+                        "Productos (${uiState.items.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                )
+                }
+
+                items(uiState.items, key = { it.id }) { item ->
+                    ItemCarritoRow(
+                        item = item,
+                        onEliminar = { viewModel.onEvent(CuentaEvent.EliminarItem(item.id)) },
+                        onCantidadChange = { nueva ->
+                            viewModel.onEvent(CuentaEvent.ActualizarCantidad(item.id, nueva))
+                        }
+                    )
+                }
+
+                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
         }
     }
 }
 
 @Composable
-fun ItemCuentaCard(
-    detalle: DetallePedido,
-    onEliminar: () -> Unit,
-    modifier: Modifier = Modifier
+private fun HorarioOpcionItem(
+    opcion: OpcionHorario,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    Surface(
+        onClick = onClick,
+        color = if (isSelected) Brown80.copy(alpha = 0.12f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Brown80 else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = when (opcion) {
+                    OpcionHorario.AHORA -> "⚡"
+                    OpcionHorario.MINUTOS_15 -> "🕐"
+                    OpcionHorario.MINUTOS_30 -> "🕧"
+                    OpcionHorario.MINUTOS_45 -> "🕑"
+                    OpcionHorario.UNA_HORA -> "🕒"
+                },
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = opcion.label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) Brown80 else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItemCarritoRow(
+    item: ItemCarrito,
+    onEliminar: () -> Unit,
+    onCantidadChange: (Int) -> Unit
+) {
+    val subtotal = item.producto.precio.multiply(java.math.BigDecimal(item.cantidad))
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(detalle.producto?.nombre ?: "Producto", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "${detalle.cantidad} x $${"%.2f".format(detalle.precioUnitario)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    text = item.producto.nombre,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "$${"%.2f".format(item.producto.precio)} c/u",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Subtotal: $${"%.2f".format(subtotal)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Brown80,
+                    fontWeight = FontWeight.Medium
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    "$${"%.2f".format(detalle.subtotal)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Brown80
-                )
-                IconButton(onClick = onEliminar) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
 
-@Composable
-fun ResumenCuenta(
-    subtotal: java.math.BigDecimal,
-    iva: java.math.BigDecimal,
-    total: java.math.BigDecimal,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Subtotal", style = MaterialTheme.typography.bodyLarge)
-                Text("$${"%.2f".format(subtotal)}", style = MaterialTheme.typography.bodyLarge)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("IVA (16%)", style = MaterialTheme.typography.bodyLarge)
-                Text("$${"%.2f".format(iva)}", style = MaterialTheme.typography.bodyLarge)
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("TOTAL", style = MaterialTheme.typography.titleLarge)
-                Text("$${"%.2f".format(total)}", style = MaterialTheme.typography.titleLarge, color = Brown80)
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onEliminar, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                CantidadSelector(
+                    cantidad = item.cantidad,
+                    onCantidadChange = onCantidadChange,
+                    minCantidad = 1,
+                    maxCantidad = 10
+                )
             }
         }
     }

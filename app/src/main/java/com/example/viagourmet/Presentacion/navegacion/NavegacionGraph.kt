@@ -1,7 +1,7 @@
 package com.example.viagourmet.Presentacion.navegacion
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,29 +17,29 @@ import com.example.viagourmet.Presentacion.screens.menu.ProductoDetalleScreen
 import com.example.viagourmet.Presentacion.screens.mipedido.MiPedidoScreen
 import com.example.viagourmet.Presentacion.screens.registro.RegistroScreen
 import com.example.viagourmet.Presentacion.session.RolUsuario
-
+import com.example.viagourmet.Presentacion.session.SessionManager
+import javax.inject.Inject
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Registro : Screen("registro")
     object Menu : Screen("menu")
     object Cuenta : Screen("cuenta")
+    object Admin : Screen("admin")
     object MiPedido : Screen("mi_pedido")
-    object Admin : Screen("admin")                          // ← NUEVA RUTA
     object ProductoDetalle : Screen("producto/{productoId}") {
         fun createRoute(productoId: Int) = "producto/$productoId"
     }
 }
 
 @Composable
-fun NavegacionGraph() {
+fun NavegacionGraph(
+    sessionManager: SessionManager   // ← inyectado desde MainActivity
+) {
     val navController = rememberNavController()
-    val cuentaViewModel: CuentaViewModel = viewModel()
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Login.route
-    ) {
+    NavHost(navController = navController, startDestination = Screen.Login.route) {
+
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = { rol ->
@@ -52,9 +52,7 @@ fun NavegacionGraph() {
                         }
                     }
                 },
-                onNavigateToRegistro = {
-                    navController.navigate(Screen.Registro.route)
-                }
+                onNavigateToRegistro = { navController.navigate(Screen.Registro.route) }
             )
         }
 
@@ -81,6 +79,12 @@ fun NavegacionGraph() {
                 },
                 onNavigateToCuenta = {
                     navController.navigate(Screen.Cuenta.route)
+                },
+                onCerrarSesion = {
+                    sessionManager.cerrarSesion()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Menu.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -89,37 +93,39 @@ fun NavegacionGraph() {
             route = Screen.ProductoDetalle.route,
             arguments = listOf(navArgument("productoId") { type = NavType.IntType })
         ) { backStackEntry ->
+            val cuentaViewModel: CuentaViewModel = hiltViewModel()
             val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+
             ProductoDetalleScreen(
                 productoId = productoId,
                 onNavigateBack = { navController.popBackStack() },
                 onAgregarAlPedido = { producto, cantidad ->
                     cuentaViewModel.onEvent(CuentaEvent.AgregarProducto(producto, cantidad))
+                    navController.popBackStack()
                 }
             )
         }
 
         composable(Screen.Cuenta.route) {
             CuentaScreen(
-                viewModel = cuentaViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onSeguirComprando = { navController.popBackStack() },
-                onVerEstadoPedido = {
-                    navController.navigate(Screen.MiPedido.route)
+                onVerEstadoPedido = { _ ->
+                    navController.navigate(Screen.MiPedido.route) {
+                        popUpTo(Screen.Menu.route)
+                    }
                 }
             )
         }
 
         composable(Screen.MiPedido.route) {
-            MiPedidoScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            MiPedidoScreen(onNavigateBack = { navController.popBackStack() })
         }
 
-        // ── PANEL ADMINISTRADOR ──────────────────────────────────────────────
         composable(Screen.Admin.route) {
             AdminPedidosScreen(
                 onCerrarSesion = {
+                    sessionManager.cerrarSesion()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Admin.route) { inclusive = true }
                     }

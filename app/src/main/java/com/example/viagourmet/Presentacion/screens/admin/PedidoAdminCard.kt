@@ -3,6 +3,8 @@ package com.example.viagourmet.Presentacion.screens.admin
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import java.time.LocalDateTime
+import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.Pedido
-import java.time.format.DateTimeFormatter
+
 
 @Composable
 fun PedidoAdminCard(
@@ -103,7 +105,7 @@ fun PedidoAdminCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = pedido.creadoEn.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        text = pedido.creadoEn.toHoraString(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -243,4 +245,44 @@ fun com.example.viagourmet.domain.model.ModuloPedido.colorTexto(): Color = when 
     com.example.viagourmet.domain.model.ModuloPedido.DESAYUNOS -> Color(0xFFF57F17)
     com.example.viagourmet.domain.model.ModuloPedido.COMIDAS -> Color(0xFF6A1B9A)
     com.example.viagourmet.domain.model.ModuloPedido.LIBRE -> Color(0xFF00695C)
+}
+
+// === Helpers compatibles con minSdk 24 ===
+
+
+fun LocalDateTime.toHoraString(): String {
+    val cal = toCalendar()
+    return "%02d:%02d".format(
+        cal.get(Calendar.HOUR_OF_DAY),
+        cal.get(Calendar.MINUTE)
+    )
+}
+
+fun LocalDateTime.toFechaHoraString(): String {
+    val cal = toCalendar()
+    return "%02d/%02d/%04d %02d:%02d".format(
+        cal.get(Calendar.DAY_OF_MONTH),
+        cal.get(Calendar.MONTH) + 1,
+        cal.get(Calendar.YEAR),
+        cal.get(Calendar.HOUR_OF_DAY),
+        cal.get(Calendar.MINUTE)
+    )
+}
+
+private fun LocalDateTime.toCalendar(): Calendar {
+    val cal = Calendar.getInstance()
+    // Usamos toString() para parsear manualmente y evitar campos API 26+
+    // LocalDateTime.toString() devuelve "yyyy-MM-ddTHH:mm:ss[.nanos]"
+    val parts = toString().split("T")
+    val dateParts = parts[0].split("-")
+    val timeParts = parts[1].split(":")
+    cal.set(
+        dateParts[0].toInt(),           // year
+        dateParts[1].toInt() - 1,       // month (0-based)
+        dateParts[2].toInt(),           // day
+        timeParts[0].toInt(),           // hour
+        timeParts[1].toInt(),           // minute
+        timeParts[2].substringBefore(".").toIntOrNull() ?: 0  // second
+    )
+    return cal
 }

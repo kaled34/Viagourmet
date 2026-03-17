@@ -1,6 +1,5 @@
 package com.example.viagourmet.Presentacion.screens.admin
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,7 +18,8 @@ import com.example.viagourmet.Presentacion.theme.Brown80
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.Pedido
 import com.example.viagourmet.domain.model.TipoPedido
-import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +65,7 @@ fun PedidoDetalleSheet(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = pedido.creadoEn.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+                        text = pedido.creadoEn.toFechaHoraString(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

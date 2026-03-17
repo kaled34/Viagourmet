@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,7 +16,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.viagourmet.Presentacion.components.CategoriaChip
 import com.example.viagourmet.Presentacion.components.ProductoCard
 import com.example.viagourmet.Presentacion.theme.Brown80
-import com.example.viagourmet.Presentacion.screens.menu.MenuViewModel
 import com.example.viagourmet.domain.model.Categoria
 import com.example.viagourmet.domain.model.Producto
 
@@ -24,10 +24,35 @@ import com.example.viagourmet.domain.model.Producto
 fun MenuScreen(
     viewModel: MenuViewModel = hiltViewModel(),
     onNavigateToDetalle: (Int) -> Unit,
-    onNavigateToCuenta: () -> Unit
+    onNavigateToCuenta: () -> Unit,
+    onCerrarSesion: () -> Unit          // ← nuevo parámetro
 ) {
-    // SIN collectAsStateWithLifecycle — usamos collectAsState que no necesita dependencia extra
     val uiState by viewModel.uiState.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // Diálogo de confirmación de cierre de sesión
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Cerrar sesión") },
+            text = { Text("¿Estás seguro que quieres cerrar sesión?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onCerrarSesion()
+                    }
+                ) {
+                    Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -42,10 +67,19 @@ fun MenuScreen(
                     containerColor = Brown80
                 ),
                 actions = {
+                    // Botón carrito
                     IconButton(onClick = onNavigateToCuenta) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Ver cuenta",
+                            contentDescription = "Ver carrito",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    // Botón cerrar sesión
+                    IconButton(onClick = { showLogoutDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Cerrar sesión",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
