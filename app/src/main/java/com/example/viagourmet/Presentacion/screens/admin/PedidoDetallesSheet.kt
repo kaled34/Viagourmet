@@ -209,7 +209,7 @@ fun PedidoDetalleSheet(
             // Notas
             if (!pedido.notas.isNullOrBlank()) {
                 HorizontalDivider()
-                SectionTitle("⚠️ Notas especiales")
+                SectionTitle("Notas especiales")
                 Surface(
                     color = Color(0xFFFFF3E0),
                     shape = RoundedCornerShape(8.dp),

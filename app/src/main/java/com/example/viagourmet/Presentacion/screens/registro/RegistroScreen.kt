@@ -18,9 +18,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.viagourmet.Presentacion.theme.Brown80
 import com.example.viagourmet.Presentacion.session.RolUsuario
-import androidx.compose.material3.FilterChip
+import com.example.viagourmet.Presentacion.theme.Brown80
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroScreen(
@@ -37,25 +37,12 @@ fun RegistroScreen(
     var password by remember { mutableStateOf("") }
     var confirmarPassword by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var errorLocal by remember { mutableStateOf<String?>(null) }
+    var rolSeleccionado by remember { mutableStateOf(RolUsuario.CLIENTE) }
 
     // Navegar cuando el registro sea exitoso
     LaunchedEffect(uiState.registroExitoso) {
         if (uiState.registroExitoso) {
-            uiState.rolRegistrado?.let { rol ->
-                onRegistroExitoso(rol)
-            }
-        }
-    }
-
-    fun validar(): Boolean {
-        return when {
-            nombre.isBlank() -> { errorLocal = "El nombre es obligatorio"; false }
-            email.isBlank() -> { errorLocal = "El email es obligatorio"; false }
-            !email.contains("@") -> { errorLocal = "Email inválido"; false }
-            password.length < 6 -> { errorLocal = "La contraseña debe tener al menos 6 caracteres"; false }
-            password != confirmarPassword -> { errorLocal = "Las contraseñas no coinciden"; false }
-            else -> { errorLocal = null; true }
+            uiState.rolRegistrado?.let { onRegistroExitoso(it) }
         }
     }
 
@@ -72,13 +59,13 @@ fun RegistroScreen(
             style = MaterialTheme.typography.headlineLarge,
             color = Brown80
         )
-
         Text(
             text = "Crea tu cuenta",
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
         )
 
+        // Nombre
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
@@ -87,9 +74,9 @@ fun RegistroScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Apellido
         OutlinedTextField(
             value = apellido,
             onValueChange = { apellido = it },
@@ -98,9 +85,9 @@ fun RegistroScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Teléfono
         OutlinedTextField(
             value = telefono,
             onValueChange = { telefono = it },
@@ -110,18 +97,16 @@ fun RegistroScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Selector de rol
-        var rolSeleccionado by remember { mutableStateOf(RolUsuario.CLIENTE) }
-
         Text(
             text = "Tipo de cuenta",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp)
+                .padding(top = 4.dp, bottom = 4.dp)
         )
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -139,11 +124,9 @@ fun RegistroScreen(
                 modifier = Modifier.weight(1f)
             )
         }
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
-
+        // Email
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -153,28 +136,30 @@ fun RegistroScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Contraseña *") },
+            label = { Text("Contraseña * (mín. 6 caracteres)") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (isPasswordVisible) VisualTransformation.None
+            else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Confirmar contraseña
         OutlinedTextField(
             value = confirmarPassword,
             onValueChange = { confirmarPassword = it },
             label = { Text("Confirmar contraseña *") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-            visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (isPasswordVisible) VisualTransformation.None
+            else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -191,11 +176,10 @@ fun RegistroScreen(
             Text("Mostrar contraseña", style = MaterialTheme.typography.bodyMedium)
         }
 
-        // Error local (validaciones) o error del API
-        val mensajeError = errorLocal ?: uiState.errorMessage
-        mensajeError?.let {
+        // Mensaje de error
+        uiState.errorMessage?.let { error ->
             Text(
-                text = it,
+                text = error,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -204,23 +188,24 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Botón registrarse
         Button(
             onClick = {
-                if (validar()) {
-                    viewModel.onEvent(
-                        RegistroEvent.Registrar(
-                            nombre = nombre,
-                            apellido = apellido.ifBlank { null },
-                            telefono = telefono.ifBlank { null },
-                            email = email,
-                            password = password,
-                            rol = rolSeleccionado
-                        )
+                viewModel.onEvent(
+                    RegistroEvent.Registrar(
+                        nombre = nombre,
+                        apellido = apellido.ifBlank { null },
+                        telefono = telefono.ifBlank { null },
+                        email = email,
+                        password = password,
+                        confirmarPassword = confirmarPassword,  // ← ahora se pasa correctamente
+                        rol = rolSeleccionado
                     )
-                }
+                )
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !uiState.isLoading && nombre.isNotBlank() && email.isNotBlank() && password.isNotBlank()
+            enabled = !uiState.isLoading && nombre.isNotBlank()
+                    && email.isNotBlank() && password.isNotBlank()
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(

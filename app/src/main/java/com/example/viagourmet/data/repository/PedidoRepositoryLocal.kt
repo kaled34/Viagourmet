@@ -1,27 +1,51 @@
 package com.example.viagourmet.data.repository
 
+import com.example.viagourmet.data.entity.PedidoEntity
+import com.example.viagourmet.data.local.dao.PedidoDao
+
+import com.example.viagourmet.data.local.mapper.toDetallePedidoEntity
+import com.example.viagourmet.data.local.mapper.toDomain
+import com.example.viagourmet.data.local.mapper.toEntity
 import com.example.viagourmet.domain.model.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PedidoRepositoryLocal @Inject constructor() {
+class PedidoRepositoryLocal @Inject constructor(
+    private val dao: PedidoDao
+) {
 
-    // ── Pedidos confirmados ──────────────────────────────────────────────────
-    private val _pedidos = MutableStateFlow<List<Pedido>>(emptyList())
-    val pedidos: StateFlow<List<Pedido>> = _pedidos.asStateFlow()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // ── Carrito compartido (persiste entre pantallas) ────────────────────────
+    // ── Carrito en memoria ───────────────────────────────────────────────────
     private val _carrito = MutableStateFlow<List<ItemCarrito>>(emptyList())
     val carrito: StateFlow<List<ItemCarrito>> = _carrito.asStateFlow()
 
-    private var nextId = 1
+    // ── Flow de pedidos desde Room ───────────────────────────────────────────
+    private val _pedidosFromDb: Flow<List<Pedido>> =
+        dao.getAllPedidosFlow()
+            .map { lista -> lista.map { it.toDomain() } }
+            .flowOn(Dispatchers.IO)
 
-    // ── Carrito: agregar producto ────────────────────────────────────────────
+    private val _pedidos = MutableStateFlow<List<Pedido>>(emptyList())
+    val pedidos: StateFlow<List<Pedido>> = _pedidos.asStateFlow()
+
+    init {
+        scope.launch {
+            _pedidosFromDb.collect { lista ->
+                _pedidos.value = lista
+            }
+        }
+    }
+
+    fun getPedidosFlow(): StateFlow<List<Pedido>> = pedidos
+
+    // ── Carrito ──────────────────────────────────────────────────────────────
 
     fun agregarAlCarrito(producto: Producto, cantidad: Int) {
         _carrito.update { lista ->
@@ -56,79 +80,65 @@ class PedidoRepositoryLocal @Inject constructor() {
         _carrito.value = emptyList()
     }
 
-    // ── Pedidos: crear ───────────────────────────────────────────────────────
+    // ── Crear pedido ─────────────────────────────────────────────────────────
 
-    fun crearPedido(
+    /**
+     * @param empleadoId  Id del usuario que confirma el pedido (empleado o cliente).
+     * @param clienteId   Id del cliente dueño del pedido.
+     *                    Si el cliente hace su propio pedido, clienteId == empleadoId.
+     *                    Si el empleado crea el pedido, clienteId debe ser el id del
+     *                    cliente al que se le asigna (o 0 si no aplica).
+     * @param clienteNombre Nombre que se mostrará en el panel admin.
+     */
+    suspend fun crearPedido(
+        empleadoId: Int,
         clienteId: Int,
         clienteNombre: String,
         horario: String?,
         notas: String?
     ): Pedido {
         val itemsActuales = _carrito.value
-        val detalles = itemsActuales.mapIndexed { index, item ->
-            DetallePedido(
-                id = index + 1,
-                pedidoId = nextId,
-                productoId = item.producto.id,
-                cantidad = item.cantidad,
-                precioUnitario = item.producto.precio,
-                notas = null,
-                producto = item.producto
-            )
-        }
+        val ahora = nowString()
 
-        val nuevoPedido = Pedido(
-            id = nextId++,
-            empleadoId = 0,
-            clienteId = clienteId,
-            modulo = detectarModulo(itemsActuales),
-            estado = EstadoPedido.PENDIENTE,
-            tipo = TipoPedido.PARA_LLEVAR,
-            horarioRecogidaId = null,
-            notas = buildString {
-                if (!horario.isNullOrBlank()) append("🕐 Recogida: $horario")
-                if (!notas.isNullOrBlank()) {
-                    if (isNotBlank()) append(" | ")
-                    append(notas)
-                }
-            }.ifBlank { null },
-            creadoEn = nowAsLocalDateTime(),
-            actualizadoEn = nowAsLocalDateTime(),
-            detalles = detalles,
-            itemsLibres = emptyList(),
-            cliente = Cliente(
-                id = clienteId,
-                nombre = clienteNombre,
-                apellido = null,
-                telefono = null,
-                email = null
-            )
-        )
-
-        _pedidos.update { lista -> lista + nuevoPedido }
-        limpiarCarrito()
-        return nuevoPedido
-    }
-
-    // ── Pedidos: cambiar estado ──────────────────────────────────────────────
-
-    fun actualizarEstado(pedidoId: Int, nuevoEstado: EstadoPedido): Boolean {
-        var exito = false
-        _pedidos.update { lista ->
-            lista.map { pedido ->
-                if (pedido.id == pedidoId) {
-                    exito = true
-                    pedido.copy(
-                        estado = nuevoEstado,
-                        actualizadoEn = nowAsLocalDateTime()
-                    )
-                } else pedido
+        val notasFinal = buildString {
+            if (!horario.isNullOrBlank()) append("🕐 Recogida: $horario")
+            if (!notas.isNullOrBlank()) {
+                if (isNotBlank()) append(" | ")
+                append(notas)
             }
-        }
-        return exito
+        }.ifBlank { null }
+
+        val entity = PedidoEntity(
+            empleadoId = empleadoId,
+            clienteId = clienteId,          // ← ahora es el cliente real, no el empleado
+            clienteNombre = clienteNombre,
+            clienteApellido = null,
+            clienteTelefono = null,
+            clienteEmail = null,
+            modulo = detectarModulo(itemsActuales).name,
+            estado = EstadoPedido.PENDIENTE.name,
+            tipo = TipoPedido.PARA_LLEVAR.name,
+            horarioRecogidaId = null,
+            notas = notasFinal,
+            creadoEn = ahora,
+            actualizadoEn = ahora
+        )
+        val pedidoId = dao.insertPedido(entity).toInt()
+
+        val detalles = itemsActuales.map { it.toDetallePedidoEntity(pedidoId) }
+        dao.insertDetalles(detalles)
+
+        limpiarCarrito()
+
+        return dao.getPedidoById(pedidoId)!!.toDomain()
     }
 
-    fun getPedidosFlow(): StateFlow<List<Pedido>> = pedidos
+    // ── Actualizar estado ────────────────────────────────────────────────────
+
+    suspend fun actualizarEstado(pedidoId: Int, nuevoEstado: EstadoPedido): Boolean {
+        val filas = dao.actualizarEstado(pedidoId, nuevoEstado.name, nowString())
+        return filas > 0
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -136,14 +146,14 @@ class PedidoRepositoryLocal @Inject constructor() {
         val categorias = items.mapNotNull { it.producto.categoria?.modulo }
         return when {
             categorias.all { it == ModuloCategoria.DESAYUNOS } -> ModuloPedido.DESAYUNOS
-            categorias.all { it == ModuloCategoria.COMIDAS } -> ModuloPedido.COMIDAS
+            categorias.all { it == ModuloCategoria.COMIDAS }   -> ModuloPedido.COMIDAS
             else -> ModuloPedido.LIBRE
         }
     }
 
-    private fun nowAsLocalDateTime(): java.time.LocalDateTime {
+    private fun nowString(): String {
         val c = java.util.Calendar.getInstance()
-        val iso = "%04d-%02d-%02dT%02d:%02d:%02d".format(
+        return "%04d-%02d-%02dT%02d:%02d:%02d".format(
             c.get(java.util.Calendar.YEAR),
             c.get(java.util.Calendar.MONTH) + 1,
             c.get(java.util.Calendar.DAY_OF_MONTH),
@@ -151,19 +161,8 @@ class PedidoRepositoryLocal @Inject constructor() {
             c.get(java.util.Calendar.MINUTE),
             c.get(java.util.Calendar.SECOND)
         )
-        return java.time.LocalDateTime.parse(iso)
     }
 }
 
-// Modelos auxiliares
-data class ItemCarrito(
-    val id: Int,
-    val producto: Producto,
-    val cantidad: Int
-)
-
-// Mantenemos ItemPedido por compatibilidad
-data class ItemPedido(
-    val producto: Producto,
-    val cantidad: Int
-)
+data class ItemCarrito(val id: Int, val producto: Producto, val cantidad: Int)
+data class ItemPedido(val producto: Producto, val cantidad: Int)

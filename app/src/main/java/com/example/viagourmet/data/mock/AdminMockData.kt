@@ -1,7 +1,5 @@
 package com.example.viagourmet.data.mock
 
-
-
 import com.example.viagourmet.domain.model.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -33,7 +31,10 @@ object AdminMockData {
                 )
             ),
             itemsLibres = emptyList(),
-            cliente = Cliente(id = 10, nombre = "Ana", apellido = "García", telefono = "9611234567", email = "ana@email.com")
+            cliente = Cliente(
+                id = 10, nombre = "Ana", apellido = "García",
+                telefono = "9611234567", email = "ana@email.com"
+            )
         ),
         Pedido(
             id = 2,
@@ -59,7 +60,10 @@ object AdminMockData {
                 )
             ),
             itemsLibres = emptyList(),
-            cliente = Cliente(id = 11, nombre = "Carlos", apellido = "Ruiz", telefono = "9619876543", email = "carlos@email.com")
+            cliente = Cliente(
+                id = 11, nombre = "Carlos", apellido = "Ruiz",
+                telefono = "9619876543", email = "carlos@email.com"
+            )
         ),
         Pedido(
             id = 3,
@@ -80,7 +84,10 @@ object AdminMockData {
                 )
             ),
             itemsLibres = emptyList(),
-            cliente = Cliente(id = 12, nombre = "María", apellido = "López", telefono = null, email = "maria@email.com")
+            cliente = Cliente(
+                id = 12, nombre = "María", apellido = "López",
+                telefono = null, email = "maria@email.com"
+            )
         ),
         Pedido(
             id = 4,
@@ -101,7 +108,10 @@ object AdminMockData {
                 )
             ),
             itemsLibres = emptyList(),
-            cliente = Cliente(id = 13, nombre = "Luis", apellido = "Hernández", telefono = "9615554433", email = null)
+            cliente = Cliente(
+                id = 13, nombre = "Luis", apellido = "Hernández",
+                telefono = "9615554433", email = null
+            )
         ),
         Pedido(
             id = 5,
@@ -123,24 +133,10 @@ object AdminMockData {
                     creadoEn = LocalDateTime.now().minusHours(1)
                 )
             ),
-            cliente = Cliente(id = 14, nombre = "Patricia", apellido = "Morales", telefono = "9612223344", email = "patricia@empresa.com")
+            cliente = Cliente(
+                id = 14, nombre = "Patricia", apellido = "Morales",
+                telefono = "9612223344", email = "patricia@empresa.com"
+            )
         )
     )
-
-    fun getPedidosActivos(): List<Pedido> =
-        pedidos.filter { it.estado != EstadoPedido.CANCELADO && it.estado != EstadoPedido.ENTREGADO }
-
-    fun getPedidosPorEstado(estado: EstadoPedido): List<Pedido> =
-        pedidos.filter { it.estado == estado }
-
-    fun actualizarEstado(pedidoId: Int, nuevoEstado: EstadoPedido): Boolean {
-        val index = pedidos.indexOfFirst { it.id == pedidoId }
-        return if (index >= 0) {
-            pedidos[index] = pedidos[index].copy(
-                estado = nuevoEstado,
-                actualizadoEn = LocalDateTime.now()
-            )
-            true
-        } else false
-    }
 }

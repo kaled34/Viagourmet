@@ -3,8 +3,6 @@ package com.example.viagourmet.Presentacion.screens.admin
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import java.time.LocalDateTime
-import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,14 +15,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.Pedido
-
+// Todas las extensiones vienen de archivos del mismo paquete:
+//   displayName, siguienteEstado, icono, colorFondo, colorBorde, colorTexto → PedidoExtensions.kt
+//   toHoraString, toFechaHoraString                                          → DateExtensions.kt
 
 @Composable
 fun PedidoAdminCard(
@@ -49,7 +48,7 @@ fun PedidoAdminCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
-            // Header: estado + módulo
+            // ── Header: estado + módulo ──────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -87,13 +86,14 @@ fun PedidoAdminCard(
                 }
             }
 
-            // Body: info del pedido
+            // ── Body ─────────────────────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                // Número de pedido + hora
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -137,7 +137,7 @@ fun PedidoAdminCard(
                     )
                 }
 
-                // Notas importantes
+                // Notas
                 if (!pedido.notas.isNullOrBlank()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -159,7 +159,7 @@ fun PedidoAdminCard(
                     }
                 }
 
-                // Tipo de pedido
+                // Tipo + botón avanzar estado
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -171,7 +171,6 @@ fun PedidoAdminCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Botón avanzar estado
                     val siguiente = pedido.estado.siguienteEstado()
                     if (siguiente != null) {
                         FilledTonalButton(
@@ -199,90 +198,4 @@ fun PedidoAdminCard(
             }
         }
     }
-}
-
-// === Extensiones de color por estado ===
-
-fun EstadoPedido.colorFondo(): Color = when (this) {
-    EstadoPedido.PENDIENTE -> Color(0xFFFFF3E0)
-    EstadoPedido.EN_PREPARACION -> Color(0xFFE3F2FD)
-    EstadoPedido.LISTO -> Color(0xFFE8F5E9)
-    EstadoPedido.ENTREGADO -> Color(0xFFF5F5F5)
-    EstadoPedido.CANCELADO -> Color(0xFFFFEBEE)
-}
-
-fun EstadoPedido.colorBorde(): Color = when (this) {
-    EstadoPedido.PENDIENTE -> Color(0xFFFF6F00)
-    EstadoPedido.EN_PREPARACION -> Color(0xFF1565C0)
-    EstadoPedido.LISTO -> Color(0xFF2E7D32)
-    EstadoPedido.ENTREGADO -> Color(0xFF9E9E9E)
-    EstadoPedido.CANCELADO -> Color(0xFFC62828)
-}
-
-fun EstadoPedido.colorTexto(): Color = when (this) {
-    EstadoPedido.PENDIENTE -> Color(0xFFE65100)
-    EstadoPedido.EN_PREPARACION -> Color(0xFF0D47A1)
-    EstadoPedido.LISTO -> Color(0xFF1B5E20)
-    EstadoPedido.ENTREGADO -> Color(0xFF616161)
-    EstadoPedido.CANCELADO -> Color(0xFFB71C1C)
-}
-
-fun EstadoPedido.icono(): String = when (this) {
-    EstadoPedido.PENDIENTE -> "🟡"
-    EstadoPedido.EN_PREPARACION -> "🔵"
-    EstadoPedido.LISTO -> "🟢"
-    EstadoPedido.ENTREGADO -> "✅"
-    EstadoPedido.CANCELADO -> "❌"
-}
-
-fun com.example.viagourmet.domain.model.ModuloPedido.colorFondo(): Color = when (this) {
-    com.example.viagourmet.domain.model.ModuloPedido.DESAYUNOS -> Color(0xFFFFF8E1)
-    com.example.viagourmet.domain.model.ModuloPedido.COMIDAS -> Color(0xFFF3E5F5)
-    com.example.viagourmet.domain.model.ModuloPedido.LIBRE -> Color(0xFFE0F2F1)
-}
-
-fun com.example.viagourmet.domain.model.ModuloPedido.colorTexto(): Color = when (this) {
-    com.example.viagourmet.domain.model.ModuloPedido.DESAYUNOS -> Color(0xFFF57F17)
-    com.example.viagourmet.domain.model.ModuloPedido.COMIDAS -> Color(0xFF6A1B9A)
-    com.example.viagourmet.domain.model.ModuloPedido.LIBRE -> Color(0xFF00695C)
-}
-
-// === Helpers compatibles con minSdk 24 ===
-
-
-fun LocalDateTime.toHoraString(): String {
-    val cal = toCalendar()
-    return "%02d:%02d".format(
-        cal.get(Calendar.HOUR_OF_DAY),
-        cal.get(Calendar.MINUTE)
-    )
-}
-
-fun LocalDateTime.toFechaHoraString(): String {
-    val cal = toCalendar()
-    return "%02d/%02d/%04d %02d:%02d".format(
-        cal.get(Calendar.DAY_OF_MONTH),
-        cal.get(Calendar.MONTH) + 1,
-        cal.get(Calendar.YEAR),
-        cal.get(Calendar.HOUR_OF_DAY),
-        cal.get(Calendar.MINUTE)
-    )
-}
-
-private fun LocalDateTime.toCalendar(): Calendar {
-    val cal = Calendar.getInstance()
-    // Usamos toString() para parsear manualmente y evitar campos API 26+
-    // LocalDateTime.toString() devuelve "yyyy-MM-ddTHH:mm:ss[.nanos]"
-    val parts = toString().split("T")
-    val dateParts = parts[0].split("-")
-    val timeParts = parts[1].split(":")
-    cal.set(
-        dateParts[0].toInt(),           // year
-        dateParts[1].toInt() - 1,       // month (0-based)
-        dateParts[2].toInt(),           // day
-        timeParts[0].toInt(),           // hour
-        timeParts[1].toInt(),           // minute
-        timeParts[2].substringBefore(".").toIntOrNull() ?: 0  // second
-    )
-    return cal
 }

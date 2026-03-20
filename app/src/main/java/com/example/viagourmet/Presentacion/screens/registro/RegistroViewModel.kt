@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.viagourmet.Presentacion.session.RolUsuario
 import com.example.viagourmet.Presentacion.session.SessionManager
-import com.example.viagourmet.Presentacion.session.UsuarioSesion
+import com.example.viagourmet.data.repository.AuthRepository
+import com.example.viagourmet.data.repository.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +27,7 @@ sealed class RegistroEvent {
         val telefono: String?,
         val email: String,
         val password: String,
+        val confirmarPassword: String,
         val rol: RolUsuario
     ) : RegistroEvent()
     object LimpiarError : RegistroEvent()
@@ -34,6 +35,7 @@ sealed class RegistroEvent {
 
 @HiltViewModel
 class RegistroViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -43,39 +45,34 @@ class RegistroViewModel @Inject constructor(
     fun onEvent(event: RegistroEvent) {
         when (event) {
             is RegistroEvent.Registrar -> registrar(event)
-            is RegistroEvent.LimpiarError -> _uiState.value = _uiState.value.copy(errorMessage = null)
+            is RegistroEvent.LimpiarError ->
+                _uiState.value = _uiState.value.copy(errorMessage = null)
         }
     }
 
     private fun registrar(event: RegistroEvent.Registrar) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = RegistroUiState(isLoading = true)
 
-            try {
-                // Simulamos llamada al API
-                delay(1000)
-
-                // Guardamos sesión con el rol seleccionado
-                sessionManager.guardarSesion(
-                    UsuarioSesion(
-                        id = 1, // temporal hasta tener API
-                        nombre = event.nombre,
-                        email = event.email,
-                        rol = event.rol
+            when (val result = authRepository.registrar(
+                nombre = event.nombre,
+                apellido = event.apellido,
+                telefono = event.telefono,
+                email = event.email,
+                password = event.password,
+                confirmarPassword = event.confirmarPassword,
+                rol = event.rol
+            )) {
+                is AuthResult.Success -> {
+                    sessionManager.guardarSesion(result.usuario)
+                    _uiState.value = RegistroUiState(
+                        registroExitoso = true,
+                        rolRegistrado = result.usuario.rol
                     )
-                )
-
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    registroExitoso = true,
-                    rolRegistrado = event.rol
-                )
-
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error al registrarse: ${e.message}"
-                )
+                }
+                is AuthResult.Error -> {
+                    _uiState.value = RegistroUiState(errorMessage = result.mensaje)
+                }
             }
         }
     }

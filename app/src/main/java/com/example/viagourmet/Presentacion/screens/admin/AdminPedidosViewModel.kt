@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.viagourmet.data.repository.PedidoRepositoryLocal
 import com.example.viagourmet.domain.model.EstadoPedido
-import com.example.viagourmet.domain.model.ModuloPedido
 import com.example.viagourmet.domain.model.Pedido
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +13,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+// displayName, siguienteEstado y demás extensiones están en PedidoExtensions.kt
 
 enum class FiltroAdmin(val label: String) {
     TODOS("Todos"),
@@ -38,17 +39,17 @@ data class AdminPedidosUiState(
             FiltroAdmin.TODOS -> pedidos.filter {
                 it.estado != EstadoPedido.ENTREGADO && it.estado != EstadoPedido.CANCELADO
             }
-            FiltroAdmin.PENDIENTE -> pedidos.filter { it.estado == EstadoPedido.PENDIENTE }
+            FiltroAdmin.PENDIENTE      -> pedidos.filter { it.estado == EstadoPedido.PENDIENTE }
             FiltroAdmin.EN_PREPARACION -> pedidos.filter { it.estado == EstadoPedido.EN_PREPARACION }
-            FiltroAdmin.LISTO -> pedidos.filter { it.estado == EstadoPedido.LISTO }
-            FiltroAdmin.HISTORIAL -> pedidos.filter {
+            FiltroAdmin.LISTO          -> pedidos.filter { it.estado == EstadoPedido.LISTO }
+            FiltroAdmin.HISTORIAL      -> pedidos.filter {
                 it.estado == EstadoPedido.ENTREGADO || it.estado == EstadoPedido.CANCELADO
             }
         }
 
-    val contadorPendientes: Int get() = pedidos.count { it.estado == EstadoPedido.PENDIENTE }
-    val contadorEnPreparacion: Int get() = pedidos.count { it.estado == EstadoPedido.EN_PREPARACION }
-    val contadorListos: Int get() = pedidos.count { it.estado == EstadoPedido.LISTO }
+    val contadorPendientes: Int      get() = pedidos.count { it.estado == EstadoPedido.PENDIENTE }
+    val contadorEnPreparacion: Int   get() = pedidos.count { it.estado == EstadoPedido.EN_PREPARACION }
+    val contadorListos: Int          get() = pedidos.count { it.estado == EstadoPedido.LISTO }
 }
 
 sealed class AdminEvent {
@@ -74,15 +75,15 @@ class AdminPedidosViewModel @Inject constructor(
 
     fun onEvent(event: AdminEvent) {
         when (event) {
-            is AdminEvent.Cargar -> Unit
+            is AdminEvent.Cargar          -> Unit
             is AdminEvent.SeleccionarFiltro -> _uiState.value =
                 _uiState.value.copy(filtroSeleccionado = event.filtro)
-            is AdminEvent.VerDetalle -> _uiState.value =
+            is AdminEvent.VerDetalle      -> _uiState.value =
                 _uiState.value.copy(pedidoSeleccionado = event.pedido, showDetalle = true)
-            is AdminEvent.CerrarDetalle -> _uiState.value =
+            is AdminEvent.CerrarDetalle   -> _uiState.value =
                 _uiState.value.copy(showDetalle = false, pedidoSeleccionado = null)
-            is AdminEvent.CambiarEstado -> cambiarEstado(event.pedidoId, event.nuevoEstado)
-            is AdminEvent.LimpiarMensaje -> _uiState.value =
+            is AdminEvent.CambiarEstado   -> cambiarEstado(event.pedidoId, event.nuevoEstado)
+            is AdminEvent.LimpiarMensaje  -> _uiState.value =
                 _uiState.value.copy(mensajeExito = null, errorMessage = null)
         }
     }
@@ -110,30 +111,8 @@ class AdminPedidosViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isActualizando = false,
                 mensajeExito = if (exito) "Actualizado a: ${nuevoEstado.displayName()}" else null,
-                errorMessage = if (!exito) "No se pudo actualizar" else null
+                errorMessage  = if (!exito) "No se pudo actualizar" else null
             )
         }
     }
-}
-
-fun EstadoPedido.displayName(): String = when (this) {
-    EstadoPedido.PENDIENTE -> "Pendiente"
-    EstadoPedido.EN_PREPARACION -> "En preparación"
-    EstadoPedido.LISTO -> "Listo"
-    EstadoPedido.ENTREGADO -> "Entregado"
-    EstadoPedido.CANCELADO -> "Cancelado"
-}
-
-fun EstadoPedido.siguienteEstado(): EstadoPedido? = when (this) {
-    EstadoPedido.PENDIENTE -> EstadoPedido.EN_PREPARACION
-    EstadoPedido.EN_PREPARACION -> EstadoPedido.LISTO
-    EstadoPedido.LISTO -> EstadoPedido.ENTREGADO
-    EstadoPedido.ENTREGADO -> null
-    EstadoPedido.CANCELADO -> null
-}
-
-fun ModuloPedido.displayName(): String = when (this) {
-    ModuloPedido.DESAYUNOS -> "Desayunos"
-    ModuloPedido.COMIDAS -> "Comidas"
-    ModuloPedido.LIBRE -> "Libre"
 }

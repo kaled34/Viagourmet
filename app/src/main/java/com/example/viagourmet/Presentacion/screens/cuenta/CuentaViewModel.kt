@@ -2,6 +2,7 @@ package com.example.viagourmet.Presentacion.screens.cuenta
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.viagourmet.Presentacion.session.RolUsuario
 import com.example.viagourmet.Presentacion.session.SessionManager
 import com.example.viagourmet.data.repository.ItemCarrito
 import com.example.viagourmet.data.repository.PedidoRepositoryLocal
@@ -59,8 +60,6 @@ class CuentaViewModel @Inject constructor(
     private val IVA_RATE = BigDecimal("0.16")
 
     init {
-        // Observa el carrito del repositorio — se actualiza cuando
-        // ProductoDetalleScreen agrega un producto
         repository.carrito
             .onEach { items ->
                 val subtotal = items.sumOf { it.producto.precio.multiply(BigDecimal(it.cantidad)) }
@@ -101,19 +100,36 @@ class CuentaViewModel @Inject constructor(
 
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            val sesion = sessionManager.obtenerSesion()
-            val pedido = repository.crearPedido(
-                clienteId = sesion?.id ?: 0,
-                clienteNombre = sesion?.nombre ?: "Cliente",
-                horario = _uiState.value.horaSeleccionada?.label,
-                notas = null
-            )
+            try {
+                val sesion = sessionManager.obtenerSesion()
+                val sesionId = sesion?.id ?: 0
+                val sesionNombre = sesion?.nombre ?: "Cliente"
 
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                pedidoConfirmado = pedido,
-                mensajeExito = "✅ Pedido #${pedido.id} confirmado"
-            )
+                // Si es empleado, el pedido se asigna a él mismo como cliente (id 0)
+                // porque no hay forma de seleccionar a qué cliente pertenece desde esta pantalla.
+                // Si es cliente, el clienteId es su propio id — así MiPedidoScreen lo encuentra.
+                val esCliente = sesion?.rol == RolUsuario.CLIENTE
+                val clienteId = if (esCliente) sesionId else 0
+
+                val pedido = repository.crearPedido(
+                    empleadoId = sesionId,
+                    clienteId = clienteId,      // ← el cliente real
+                    clienteNombre = sesionNombre,
+                    horario = _uiState.value.horaSeleccionada?.label,
+                    notas = null
+                )
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    pedidoConfirmado = pedido,
+                    mensajeExito = "✅ Pedido #${pedido.id} confirmado"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Error al guardar el pedido: ${e.message}"
+                )
+            }
         }
     }
 }

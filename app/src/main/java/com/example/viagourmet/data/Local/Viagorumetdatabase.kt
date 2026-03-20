@@ -1,0 +1,58 @@
+package com.example.viagourmet.data.local
+
+import androidx.room.Database
+import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.viagourmet.data.entity.PedidoEntity
+import com.example.viagourmet.data.local.dao.PedidoDao
+import com.example.viagourmet.data.local.dao.UsuarioDao
+import com.example.viagourmet.data.local.entity.DetallePedidoEntity
+
+import com.example.viagourmet.data.local.entity.PedidoLibreEntity
+import com.example.viagourmet.data.local.entity.UsuarioEntity
+
+@Database(
+    entities = [
+        PedidoEntity::class,
+        DetallePedidoEntity::class,
+        PedidoLibreEntity::class,
+        UsuarioEntity::class
+    ],
+    version = 2,
+    exportSchema = false
+)
+abstract class ViaGourmetDatabase : RoomDatabase() {
+    abstract fun pedidoDao(): PedidoDao
+    abstract fun usuarioDao(): UsuarioDao
+}
+
+/**
+ * Migración 1 → 2: crea la tabla usuarios CON su índice único en email.
+ * El índice es obligatorio porque UsuarioEntity declara
+ * @Index(value = ["email"], unique = true) — Room lo verifica al abrir la BD.
+ */
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // 1. Crear la tabla
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                nombre       TEXT    NOT NULL,
+                apellido     TEXT,
+                telefono     TEXT,
+                email        TEXT    NOT NULL,
+                passwordHash TEXT    NOT NULL,
+                rol          TEXT    NOT NULL,
+                activo       INTEGER NOT NULL DEFAULT 1,
+                creadoEn     TEXT    NOT NULL
+            )
+            """.trimIndent()
+        )
+        // 2. Crear el índice único en email — este paso faltaba y causaba el crash
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_usuarios_email ON usuarios(email)"
+        )
+    }
+}

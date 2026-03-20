@@ -1,13 +1,16 @@
 package com.example.viagourmet.Presentacion.screens.login
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.viagourmet.Presentacion.session.RolUsuario
 import com.example.viagourmet.Presentacion.session.SessionManager
-import com.example.viagourmet.Presentacion.session.UsuarioSesion
+import com.example.viagourmet.data.repository.AuthRepository
+import com.example.viagourmet.data.repository.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class LoginUiState(
@@ -19,6 +22,7 @@ data class LoginUiState(
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -26,22 +30,33 @@ class LoginViewModel @Inject constructor(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun login(email: String, password: String, rol: RolUsuario) {
-        // Simulamos autenticación — aquí irá la llamada al API real
-        // Generamos un id único basado en el email para distinguir clientes
-        val clienteId = email.hashCode().let { if (it < 0) -it else it } % 10000 + 1
+        viewModelScope.launch {
+            _uiState.value = LoginUiState(isLoading = true)
 
-        sessionManager.guardarSesion(
-            UsuarioSesion(
-                id = clienteId,
-                nombre = email.substringBefore("@"),
-                email = email,
-                rol = rol
-            )
-        )
+            when (val result = authRepository.login(email, password)) {
+                is AuthResult.Success -> {
+                    // Verificar que el rol coincida con el seleccionado en la pantalla
+                    if (result.usuario.rol != rol) {
+                        _uiState.value = LoginUiState(
+                            errorMessage = "Esta cuenta es de tipo '${result.usuario.rol.name.lowercase()}'. " +
+                                    "Selecciona el rol correcto."
+                        )
+                        return@launch
+                    }
+                    sessionManager.guardarSesion(result.usuario)
+                    _uiState.value = LoginUiState(
+                        loginExitoso = true,
+                        rolLogueado = result.usuario.rol
+                    )
+                }
+                is AuthResult.Error -> {
+                    _uiState.value = LoginUiState(errorMessage = result.mensaje)
+                }
+            }
+        }
+    }
 
-        _uiState.value = LoginUiState(
-            loginExitoso = true,
-            rolLogueado = rol
-        )
+    fun limpiarError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 }

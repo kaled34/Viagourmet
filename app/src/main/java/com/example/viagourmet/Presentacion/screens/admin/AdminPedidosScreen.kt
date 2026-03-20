@@ -252,11 +252,11 @@ private fun EmptyState(filtro: FiltroAdmin, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = when (filtro) {
-                FiltroAdmin.PENDIENTE -> "🎉"
-                FiltroAdmin.EN_PREPARACION -> "😌"
-                FiltroAdmin.LISTO -> "👍"
-                FiltroAdmin.HISTORIAL -> "📭"
-                FiltroAdmin.TODOS -> "🍽️"
+                FiltroAdmin.PENDIENTE -> "Pendiente y luego el diente"
+                FiltroAdmin.EN_PREPARACION -> "En preparación"
+                FiltroAdmin.LISTO -> "Listo!!"
+                FiltroAdmin.HISTORIAL -> "Historial"
+                FiltroAdmin.TODOS -> "Todos"
             },
             style = MaterialTheme.typography.displaySmall
         )

@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 data class MiPedidoUiState(
-    val pedido: Pedido? = null,
+    val pedidoActivo: Pedido? = null,       // pedido en curso (Pendiente / En prep / Listo)
+    val ultimoEntregado: Pedido? = null,    // último pedido entregado (para mostrar historial)
     val isLoading: Boolean = false,
     val noPedidoActivo: Boolean = false
 )
@@ -30,26 +31,35 @@ class MiPedidoViewModel @Inject constructor(
     val uiState: StateFlow<MiPedidoUiState> = _uiState.asStateFlow()
 
     init {
-        observarPedidoActivo()
+        observarPedidos()
     }
 
-    private fun observarPedidoActivo() {
+    private fun observarPedidos() {
         val clienteId = sessionManager.obtenerSesion()?.id ?: 0
 
         repository.getPedidosFlow()
             .onEach { pedidos ->
-                val pedidoActivo = pedidos
-                    .filter { it.clienteId == clienteId }
+                // Todos los pedidos de este cliente
+                val misPedidos = pedidos.filter { it.clienteId == clienteId }
+
+                // Pedido activo: el más reciente que no esté entregado ni cancelado
+                val activo = misPedidos
                     .filter {
                         it.estado != EstadoPedido.ENTREGADO &&
                                 it.estado != EstadoPedido.CANCELADO
                     }
                     .maxByOrNull { it.id }
 
+                // Último entregado: para mostrar cuando no hay activo
+                val ultimoEntregado = misPedidos
+                    .filter { it.estado == EstadoPedido.ENTREGADO }
+                    .maxByOrNull { it.id }
+
                 _uiState.value = MiPedidoUiState(
-                    pedido = pedidoActivo,
+                    pedidoActivo = activo,
+                    ultimoEntregado = ultimoEntregado,
                     isLoading = false,
-                    noPedidoActivo = pedidoActivo == null
+                    noPedidoActivo = activo == null
                 )
             }
             .launchIn(viewModelScope)

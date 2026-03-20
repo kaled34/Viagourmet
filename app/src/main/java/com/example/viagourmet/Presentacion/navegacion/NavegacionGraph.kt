@@ -8,48 +8,42 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.viagourmet.Presentacion.screens.admin.AdminPedidosScreen
-import com.example.viagourmet.Presentacion.screens.cuenta.CuentaEvent
 import com.example.viagourmet.Presentacion.screens.cuenta.CuentaScreen
-import com.example.viagourmet.Presentacion.screens.cuenta.CuentaViewModel
 import com.example.viagourmet.Presentacion.screens.login.LoginScreen
 import com.example.viagourmet.Presentacion.screens.menu.MenuScreen
 import com.example.viagourmet.Presentacion.screens.menu.ProductoDetalleScreen
+import com.example.viagourmet.Presentacion.screens.menu.ProductoDetalleViewModel
 import com.example.viagourmet.Presentacion.screens.mipedido.MiPedidoScreen
 import com.example.viagourmet.Presentacion.screens.registro.RegistroScreen
 import com.example.viagourmet.Presentacion.session.RolUsuario
 import com.example.viagourmet.Presentacion.session.SessionManager
-import javax.inject.Inject
 
 sealed class Screen(val route: String) {
-    object Login : Screen("login")
-    object Registro : Screen("registro")
-    object Menu : Screen("menu")
-    object Cuenta : Screen("cuenta")
-    object Admin : Screen("admin")
-    object MiPedido : Screen("mi_pedido")
+    object Login           : Screen("login")
+    object Registro        : Screen("registro")
+    object Menu            : Screen("menu")
+    object Cuenta          : Screen("cuenta")
+    object Admin           : Screen("admin")
+    object MiPedido        : Screen("mi_pedido")
     object ProductoDetalle : Screen("producto/{productoId}") {
         fun createRoute(productoId: Int) = "producto/$productoId"
     }
 }
 
 @Composable
-fun NavegacionGraph(
-    sessionManager: SessionManager   // ← inyectado desde MainActivity
-) {
+fun NavegacionGraph(sessionManager: SessionManager) {
     val navController = rememberNavController()
 
+    // Siempre inicia en Login — el usuario debe autenticarse explícitamente
     NavHost(navController = navController, startDestination = Screen.Login.route) {
 
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = { rol ->
-                    when (rol) {
-                        RolUsuario.CLIENTE -> navController.navigate(Screen.Menu.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
-                        RolUsuario.EMPLEADO -> navController.navigate(Screen.Admin.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                    val dest = if (rol == RolUsuario.CLIENTE) Screen.Menu.route
+                    else Screen.Admin.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onNavigateToRegistro = { navController.navigate(Screen.Registro.route) }
@@ -59,13 +53,10 @@ fun NavegacionGraph(
         composable(Screen.Registro.route) {
             RegistroScreen(
                 onRegistroExitoso = { rol ->
-                    when (rol) {
-                        RolUsuario.CLIENTE -> navController.navigate(Screen.Menu.route) {
-                            popUpTo(Screen.Registro.route) { inclusive = true }
-                        }
-                        RolUsuario.EMPLEADO -> navController.navigate(Screen.Admin.route) {
-                            popUpTo(Screen.Registro.route) { inclusive = true }
-                        }
+                    val dest = if (rol == RolUsuario.CLIENTE) Screen.Menu.route
+                    else Screen.Admin.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Registro.route) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = { navController.popBackStack() }
@@ -77,9 +68,7 @@ fun NavegacionGraph(
                 onNavigateToDetalle = { productoId ->
                     navController.navigate(Screen.ProductoDetalle.createRoute(productoId))
                 },
-                onNavigateToCuenta = {
-                    navController.navigate(Screen.Cuenta.route)
-                },
+                onNavigateToCuenta = { navController.navigate(Screen.Cuenta.route) },
                 onCerrarSesion = {
                     sessionManager.cerrarSesion()
                     navController.navigate(Screen.Login.route) {
@@ -93,14 +82,14 @@ fun NavegacionGraph(
             route = Screen.ProductoDetalle.route,
             arguments = listOf(navArgument("productoId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val cuentaViewModel: CuentaViewModel = hiltViewModel()
             val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+            val viewModel: ProductoDetalleViewModel = hiltViewModel()
 
             ProductoDetalleScreen(
                 productoId = productoId,
                 onNavigateBack = { navController.popBackStack() },
                 onAgregarAlPedido = { producto, cantidad ->
-                    cuentaViewModel.onEvent(CuentaEvent.AgregarProducto(producto, cantidad))
+                    viewModel.agregarAlCarrito(producto, cantidad)
                     navController.popBackStack()
                 }
             )
