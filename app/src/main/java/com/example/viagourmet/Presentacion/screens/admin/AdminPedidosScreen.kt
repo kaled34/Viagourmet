@@ -146,8 +146,7 @@ fun AdminPedidosScreen(
                                 items = uiState.pedidosFiltrados,
                                 key = { it.id }
                             ) { pedido ->
-                                // FIX 1: Eliminado AnimatedVisibility — no es compatible
-                                // directamente dentro del scope de LazyColumn
+                                // Tarjeta de pedido
                                 PedidoAdminCard(
                                     pedido = pedido,
                                     onClick = { viewModel.onEvent(AdminEvent.VerDetalle(pedido)) },
@@ -167,7 +166,7 @@ fun AdminPedidosScreen(
         }
     }
 
-    // FIX 2: Variable local para evitar "Smart cast is impossible on delegated property"
+    // Pedido seleccionado actual
     val pedidoActual = uiState.pedidoSeleccionado
     if (uiState.showDetalle && pedidoActual != null) {
         PedidoDetalleSheet(

@@ -25,7 +25,7 @@ object DatabaseModule {
             ViaGourmetDatabase::class.java,
             "viagourmet.db"
         )
-            .addMigrations(MIGRATION_1_2)   // migración segura: no borra datos
+            .addMigrations(MIGRATION_1_2)
             .build()
 
     @Provides

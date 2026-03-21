@@ -25,10 +25,10 @@ fun LocalDateTime.toFechaHoraString(): String {
     )
 }
 
-// Función normal (no extensión) para evitar conflictos de receiver type
+// Convierte LocalDateTime a Calendar
 fun localDateTimeToCalendar(ldt: LocalDateTime): Calendar {
     val cal = Calendar.getInstance()
-    // LocalDateTime.toString() → "yyyy-MM-ddTHH:mm:ss[.nanos]"
+
     val str = ldt.toString()
     val parts = str.split("T")
     val dateParts = parts[0].split("-")

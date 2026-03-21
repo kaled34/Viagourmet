@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,8 @@ fun MenuScreen(
     viewModel: MenuViewModel = hiltViewModel(),
     onNavigateToDetalle: (Int) -> Unit,
     onNavigateToCuenta: () -> Unit,
-    onCerrarSesion: () -> Unit          // ← nuevo parámetro
+    onNavigateToMiPedido: () -> Unit,
+    onCerrarSesion: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -67,6 +69,14 @@ fun MenuScreen(
                     containerColor = Brown80
                 ),
                 actions = {
+                    // Botón Mi Pedido
+                    IconButton(onClick = onNavigateToMiPedido) {
+                        Icon(
+                            imageVector = Icons.Outlined.CheckCircle,
+                            contentDescription = "Mi pedido",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                     // Botón carrito
                     IconButton(onClick = onNavigateToCuenta) {
                         Icon(

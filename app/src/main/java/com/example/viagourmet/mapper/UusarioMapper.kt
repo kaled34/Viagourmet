@@ -5,7 +5,7 @@ import com.example.viagourmet.Presentacion.session.UsuarioSesion
 import com.example.viagourmet.data.local.entity.UsuarioEntity
 import com.example.viagourmet.data.local.util.hashPassword
 
-// ── Entidad → Sesión ─────────────────────────────────────────────────────────
+// ── Entidad de sesión
 
 fun UsuarioEntity.toSesion(): UsuarioSesion = UsuarioSesion(
     id = id,
@@ -14,7 +14,7 @@ fun UsuarioEntity.toSesion(): UsuarioSesion = UsuarioSesion(
     rol = RolUsuario.valueOf(rol)
 )
 
-// ── Datos de registro → Entidad ──────────────────────────────────────────────
+// ── Datos de registro
 
 fun crearUsuarioEntity(
     nombre: String,

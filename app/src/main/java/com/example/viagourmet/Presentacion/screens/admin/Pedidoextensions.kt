@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.ModuloPedido
 
-// ── EstadoPedido: extensiones de display ─────────────────────────────────────
+// EstadoPedido
 
 fun EstadoPedido.displayName(): String = when (this) {
     EstadoPedido.PENDIENTE      -> "Pendiente"
@@ -54,7 +54,7 @@ fun EstadoPedido.colorTexto(): Color = when (this) {
     EstadoPedido.CANCELADO      -> Color(0xFFB71C1C)
 }
 
-// ── ModuloPedido: extensiones de display ─────────────────────────────────────
+// ModuloPedido
 
 fun ModuloPedido.displayName(): String = when (this) {
     ModuloPedido.DESAYUNOS -> "Desayunos"

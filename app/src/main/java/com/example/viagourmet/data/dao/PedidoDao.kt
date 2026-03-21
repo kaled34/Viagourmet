@@ -11,29 +11,26 @@ import kotlinx.coroutines.flow.Flow
 interface PedidoDao {
 
 
-    /** Todos los pedidos con sus detalles, ordenados del más reciente al más antiguo. */
+
     @Transaction
     @Query("SELECT * FROM pedidos ORDER BY id DESC")
     fun getAllPedidosFlow(): Flow<List<PedidoConDetalles>>
 
-    /** Pedidos activos (no entregados ni cancelados). */
+
     @Transaction
     @Query("SELECT * FROM pedidos WHERE estado NOT IN ('ENTREGADO','CANCELADO') ORDER BY id DESC")
     fun getPedidosActivosFlow(): Flow<List<PedidoConDetalles>>
 
-    /** Pedidos de un cliente específico. */
     @Transaction
     @Query("SELECT * FROM pedidos WHERE clienteId = :clienteId ORDER BY id DESC")
     fun getPedidosByClienteFlow(clienteId: Int): Flow<List<PedidoConDetalles>>
 
-    /** Un pedido por id. */
     @Transaction
     @Query("SELECT * FROM pedidos WHERE id = :pedidoId")
     suspend fun getPedidoById(pedidoId: Int): PedidoConDetalles?
 
-    // ── Inserciones ──────────────────────────────────────────────────────────
+    //inserciones
 
-    /** Inserta el pedido y devuelve el id generado por Room. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPedido(pedido: PedidoEntity): Long
 
@@ -43,13 +40,11 @@ interface PedidoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItemsLibres(items: List<PedidoLibreEntity>)
 
-    // ── Actualizaciones ──────────────────────────────────────────────────────
-
+//actualizaciones
     @Query("UPDATE pedidos SET estado = :estado, actualizadoEn = :ahora WHERE id = :pedidoId")
     suspend fun actualizarEstado(pedidoId: Int, estado: String, ahora: String): Int
 
-    // ── Eliminaciones ────────────────────────────────────────────────────────
-
+//eliminaciones
     @Query("DELETE FROM pedidos")
     suspend fun deleteAll()
 }

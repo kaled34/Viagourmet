@@ -25,7 +25,7 @@ fun ProductoDetalleScreen(
     onNavigateBack: () -> Unit,
     onAgregarAlPedido: (Producto, Int) -> Unit
 ) {
-    // Buscar producto en MockData (simulando que viene de API)
+    // Buscar producto
     val producto = remember(productoId) {
         MockData.productos.find { it.id == productoId }
     }

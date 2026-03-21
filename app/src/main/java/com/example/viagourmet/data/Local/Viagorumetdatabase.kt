@@ -27,11 +27,7 @@ abstract class ViaGourmetDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
 }
 
-/**
- * Migración 1 → 2: crea la tabla usuarios CON su índice único en email.
- * El índice es obligatorio porque UsuarioEntity declara
- * @Index(value = ["email"], unique = true) — Room lo verifica al abrir la BD.
- */
+
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         // 1. Crear la tabla

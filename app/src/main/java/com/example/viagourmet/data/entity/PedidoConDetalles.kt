@@ -4,13 +4,7 @@ import androidx.room.Embedded
 import androidx.room.Relation
 import com.example.viagourmet.data.entity.PedidoEntity
 
-/**
- * Clase de relación Room que agrupa un PedidoEntity
- * con todos sus DetallePedidoEntity y PedidoLibreEntity.
- *
- * Room la resuelve automáticamente con una sola consulta
- * usando @Transaction en el DAO.
- */
+
 data class PedidoConDetalles(
     @Embedded val pedido: PedidoEntity,
 

@@ -60,7 +60,7 @@ fun LoginScreen(
             modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
         )
 
-        // ── Selector de rol ──────────────────────────────────────────────────
+        // Selector de rol
         Text(
             text = "¿Cómo ingresas?",
             style = MaterialTheme.typography.titleSmall,
@@ -73,14 +73,14 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             RolOption(
-                label = "🛒  Cliente",
+                label = "Cliente",
                 descripcion = "Ver menú y pedir",
                 isSelected = rolSeleccionado == RolUsuario.CLIENTE,
                 onClick = { rolSeleccionado = RolUsuario.CLIENTE },
                 modifier = Modifier.weight(1f)
             )
             RolOption(
-                label = "👨‍🍳  Empleado",
+                label = "Empleado",
                 descripcion = "Gestionar pedidos",
                 isSelected = rolSeleccionado == RolUsuario.EMPLEADO,
                 onClick = { rolSeleccionado = RolUsuario.EMPLEADO },
@@ -88,7 +88,7 @@ fun LoginScreen(
             )
         }
 
-        // ── Email ────────────────────────────────────────────────────────────
+        // ── Email
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -101,7 +101,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── Contraseña ───────────────────────────────────────────────────────
+        // ── Contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -124,7 +124,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ── Botón ingresar ───────────────────────────────────────────────────
+        // Botón ingresar
         Button(
             onClick = { viewModel.login(email, password, rolSeleccionado) },
             modifier = Modifier.fillMaxWidth().height(52.dp),

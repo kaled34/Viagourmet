@@ -22,13 +22,11 @@ class SessionManager @Inject constructor(
     private val prefs: SharedPreferences =
         context.getSharedPreferences("vg_session", Context.MODE_PRIVATE)
 
-    // La sesión solo vive en memoria — no se restaura automáticamente al abrir la app.
-    // El usuario siempre debe hacer login explícitamente.
+
     private var usuarioActual: UsuarioSesion? = null
 
     fun guardarSesion(usuario: UsuarioSesion) {
         usuarioActual = usuario
-        // Guardamos en prefs solo como referencia opcional (no se usa para auto-login)
         prefs.edit()
             .putInt("user_id", usuario.id)
             .putString("user_nombre", usuario.nombre)

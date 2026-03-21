@@ -23,7 +23,7 @@ fun CantidadSelector(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Botón disminuir
+        // Disminuir
         IconButton(
             onClick = {
                 if (cantidad > minCantidad) {
@@ -38,7 +38,7 @@ fun CantidadSelector(
             )
         }
 
-        // Cantidad
+        // Cantidad actual
         Surface(
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             shape = MaterialTheme.shapes.medium
@@ -50,7 +50,7 @@ fun CantidadSelector(
             )
         }
 
-        // Botón aumentar
+        // Aumentar
         IconButton(
             onClick = {
                 if (cantidad < maxCantidad) {

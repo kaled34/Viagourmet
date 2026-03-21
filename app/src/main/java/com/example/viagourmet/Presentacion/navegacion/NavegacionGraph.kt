@@ -34,7 +34,7 @@ sealed class Screen(val route: String) {
 fun NavegacionGraph(sessionManager: SessionManager) {
     val navController = rememberNavController()
 
-    // Siempre inicia en Login — el usuario debe autenticarse explícitamente
+    // Inicio: Login
     NavHost(navController = navController, startDestination = Screen.Login.route) {
 
         composable(Screen.Login.route) {
@@ -69,6 +69,7 @@ fun NavegacionGraph(sessionManager: SessionManager) {
                     navController.navigate(Screen.ProductoDetalle.createRoute(productoId))
                 },
                 onNavigateToCuenta = { navController.navigate(Screen.Cuenta.route) },
+                onNavigateToMiPedido = { navController.navigate(Screen.MiPedido.route) },
                 onCerrarSesion = {
                     sessionManager.cerrarSesion()
                     navController.navigate(Screen.Login.route) {
@@ -89,8 +90,8 @@ fun NavegacionGraph(sessionManager: SessionManager) {
                 productoId = productoId,
                 onNavigateBack = { navController.popBackStack() },
                 onAgregarAlPedido = { producto, cantidad ->
+                    // Agregar al carrito
                     viewModel.agregarAlCarrito(producto, cantidad)
-                    navController.popBackStack()
                 }
             )
         }

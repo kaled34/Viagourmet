@@ -110,7 +110,7 @@ class PedidoRepositoryLocal @Inject constructor(
 
         val entity = PedidoEntity(
             empleadoId = empleadoId,
-            clienteId = clienteId,          // ← ahora es el cliente real, no el empleado
+            clienteId = clienteId,
             clienteNombre = clienteNombre,
             clienteApellido = null,
             clienteTelefono = null,

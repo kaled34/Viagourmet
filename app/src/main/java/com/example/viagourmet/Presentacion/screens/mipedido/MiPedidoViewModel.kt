@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 data class MiPedidoUiState(
-    val pedidoActivo: Pedido? = null,       // pedido en curso (Pendiente / En prep / Listo)
-    val ultimoEntregado: Pedido? = null,    // último pedido entregado (para mostrar historial)
+    val pedidoActivo: Pedido? = null,
+    val ultimoEntregado: Pedido? = null,
     val isLoading: Boolean = false,
     val noPedidoActivo: Boolean = false
 )
@@ -39,10 +39,8 @@ class MiPedidoViewModel @Inject constructor(
 
         repository.getPedidosFlow()
             .onEach { pedidos ->
-                // Todos los pedidos de este cliente
                 val misPedidos = pedidos.filter { it.clienteId == clienteId }
 
-                // Pedido activo: el más reciente que no esté entregado ni cancelado
                 val activo = misPedidos
                     .filter {
                         it.estado != EstadoPedido.ENTREGADO &&
@@ -50,7 +48,6 @@ class MiPedidoViewModel @Inject constructor(
                     }
                     .maxByOrNull { it.id }
 
-                // Último entregado: para mostrar cuando no hay activo
                 val ultimoEntregado = misPedidos
                     .filter { it.estado == EstadoPedido.ENTREGADO }
                     .maxByOrNull { it.id }

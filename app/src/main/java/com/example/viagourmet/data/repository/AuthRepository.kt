@@ -61,7 +61,6 @@ class AuthRepository @Inject constructor(
 
         val emailNorm = email.trim().lowercase()
 
-        // Verificar si ya existe
         if (dao.findByEmail(emailNorm) != null) {
             return AuthResult.Error("Ya existe una cuenta con ese email")
         }
@@ -87,14 +86,13 @@ class AuthRepository @Inject constructor(
                 )
             )
         } catch (e: android.database.sqlite.SQLiteConstraintException) {
-            // Por si acaso hay condición de carrera en el email único
             AuthResult.Error("Ya existe una cuenta con ese email")
         } catch (e: Exception) {
             AuthResult.Error("Error al crear la cuenta: ${e.message}")
         }
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────────
+    //
 
     private fun nowString(): String {
         val c = Calendar.getInstance()

@@ -219,11 +219,11 @@ private fun HorarioOpcionItem(
         ) {
             Text(
                 text = when (opcion) {
-                    OpcionHorario.AHORA -> "⚡"
-                    OpcionHorario.MINUTOS_15 -> "🕐"
-                    OpcionHorario.MINUTOS_30 -> "🕧"
-                    OpcionHorario.MINUTOS_45 -> "🕑"
-                    OpcionHorario.UNA_HORA -> "🕒"
+                    OpcionHorario.AHORA -> ""
+                    OpcionHorario.MINUTOS_15 -> ""
+                    OpcionHorario.MINUTOS_30 -> ""
+                    OpcionHorario.MINUTOS_45 -> ""
+                    OpcionHorario.UNA_HORA -> ""
                 },
                 style = MaterialTheme.typography.titleMedium
             )

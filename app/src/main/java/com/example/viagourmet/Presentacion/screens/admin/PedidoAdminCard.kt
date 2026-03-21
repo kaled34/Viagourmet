@@ -21,9 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.viagourmet.domain.model.EstadoPedido
 import com.example.viagourmet.domain.model.Pedido
-// Todas las extensiones vienen de archivos del mismo paquete:
-//   displayName, siguienteEstado, icono, colorFondo, colorBorde, colorTexto → PedidoExtensions.kt
-//   toHoraString, toFechaHoraString                                          → DateExtensions.kt
 
 @Composable
 fun PedidoAdminCard(
@@ -48,7 +45,6 @@ fun PedidoAdminCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
-            // ── Header: estado + módulo ──────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -86,14 +82,14 @@ fun PedidoAdminCard(
                 }
             }
 
-            // ── Body ─────────────────────────────────────────────────────────
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Número de pedido + hora
+                // Número y hora
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -159,7 +155,7 @@ fun PedidoAdminCard(
                     }
                 }
 
-                // Tipo + botón avanzar estado
+                // Tipo y estado siguiente
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

@@ -53,11 +53,9 @@ fun MiPedidoScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
-                // Sin pedido activo — mostrar último entregado o mensaje vacío
                 uiState.noPedidoActivo -> {
                     val entregado = uiState.ultimoEntregado
                     if (entregado != null) {
-                        // Mostrar el último pedido entregado como historial
                         PedidoContenido(
                             pedido = entregado,
                             modifier = Modifier.fillMaxSize()
@@ -151,7 +149,7 @@ private fun PedidoContenido(pedido: Pedido, modifier: Modifier = Modifier) {
         val estadosTimeline = listOf(
             EstadoPedido.PENDIENTE to "Pedido recibido",
             EstadoPedido.EN_PREPARACION to "En preparación",
-            EstadoPedido.LISTO to "¡Listo para recoger!"
+            EstadoPedido.LISTO to "Listo para recoger"
         )
 
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -240,7 +238,7 @@ private fun PedidoContenido(pedido: Pedido, modifier: Modifier = Modifier) {
                     )
                 ) {
                     Text(
-                        text = "❌ Tu pedido fue cancelado",
+                        text = "tu pedido ha sido cancelado",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(16.dp)
@@ -254,7 +252,7 @@ private fun PedidoContenido(pedido: Pedido, modifier: Modifier = Modifier) {
                     )
                 ) {
                     Text(
-                        text = "✅ ¡Tu pedido está listo! Pasa a recogerlo.",
+                        text = "Tu pedido está listo, por favor pasa a recogerlo.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = GreenSuccess,
                         modifier = Modifier.padding(16.dp)
@@ -268,7 +266,7 @@ private fun PedidoContenido(pedido: Pedido, modifier: Modifier = Modifier) {
                     )
                 ) {
                     Text(
-                        text = "✅ Pedido entregado. ¡Que lo disfrutes!",
+                        text = " Pedido entregado. disfrutalo",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(16.dp)
                     )

@@ -237,7 +237,7 @@ fun PedidoDetalleSheet(
                     CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 }
             } else {
-                // Botones de todos los estados posibles (flujo lineal)
+                // Botones de cambio de estado
                 val estadosAccion = buildList {
                     val siguiente = pedido.estado.siguienteEstado()
                     if (siguiente != null) add(siguiente)

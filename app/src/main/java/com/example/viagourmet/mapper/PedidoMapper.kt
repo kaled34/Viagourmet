@@ -10,7 +10,7 @@ import com.example.viagourmet.domain.model.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
-// ── Dominio → Entidad ────────────────────────────────────────────────────────
+// ── Dominio de entidad
 
 fun Pedido.toEntity(): PedidoEntity = PedidoEntity(
     id = id,
@@ -50,7 +50,7 @@ fun PedidoLibre.toEntity(): PedidoLibreEntity = PedidoLibreEntity(
     creadoEn = creadoEn.toString()
 )
 
-// ── Entidad → Dominio ────────────────────────────────────────────────────────
+// ── Entidad de dominio
 
 fun PedidoConDetalles.toDomain(): Pedido = Pedido(
     id = pedido.id,

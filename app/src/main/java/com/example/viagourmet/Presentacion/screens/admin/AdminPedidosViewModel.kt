@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// displayName, siguienteEstado y demás extensiones están en PedidoExtensions.kt
+// Extensiones de pedido en PedidoExtensions.kt
 
 enum class FiltroAdmin(val label: String) {
     TODOS("Todos"),

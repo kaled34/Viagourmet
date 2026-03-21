@@ -105,9 +105,7 @@ class CuentaViewModel @Inject constructor(
                 val sesionId = sesion?.id ?: 0
                 val sesionNombre = sesion?.nombre ?: "Cliente"
 
-                // Si es empleado, el pedido se asigna a él mismo como cliente (id 0)
-                // porque no hay forma de seleccionar a qué cliente pertenece desde esta pantalla.
-                // Si es cliente, el clienteId es su propio id — así MiPedidoScreen lo encuentra.
+
                 val esCliente = sesion?.rol == RolUsuario.CLIENTE
                 val clienteId = if (esCliente) sesionId else 0
 

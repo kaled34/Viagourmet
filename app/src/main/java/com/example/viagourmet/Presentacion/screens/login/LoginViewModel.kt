@@ -35,7 +35,7 @@ class LoginViewModel @Inject constructor(
 
             when (val result = authRepository.login(email, password)) {
                 is AuthResult.Success -> {
-                    // Verificar que el rol coincida con el seleccionado en la pantalla
+                    // Verificar que el rol coincida
                     if (result.usuario.rol != rol) {
                         _uiState.value = LoginUiState(
                             errorMessage = "Esta cuenta es de tipo '${result.usuario.rol.name.lowercase()}'. " +
